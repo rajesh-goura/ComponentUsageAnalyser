@@ -11,6 +11,7 @@
 import { Command } from "commander"
 const figlet = require("figlet");
 import path from "path";
+import { scanComponents } from "../scanner";
 
 // Initializing CLI tool
 const program = new Command();
@@ -31,6 +32,13 @@ const options = program.opts();
 
 // Handling the 'getFiles' option
 if (options.analyze) {
-  const resolvedPath = path.resolve(__dirname, options.analyze);
-  console.log(`Analyzing codebase at: ${resolvedPath}`);
+  const components = scanComponents(options.analyze);
+  if (components.length === 0) {
+    console.log('No components found in the specified path.');
+  } else {
+    console.log('\nFound components:');
+    components.forEach(comp => {
+      console.log(`- ${comp.name} (${comp.file})`);
+    });
+  }
 }
