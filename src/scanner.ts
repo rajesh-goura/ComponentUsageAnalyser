@@ -31,6 +31,7 @@ export function scanComponents(path: string) {
             });
           }
         },
+        //arrow function
         VariableDeclarator(path) {
           if (
             path.node.id.type === 'Identifier' &&
