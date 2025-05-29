@@ -3,7 +3,7 @@ import colors from 'yoctocolors';
 
 // This script deletes specified files from the filesystem.
 export const deleteFiles = (files: string[]) => {
-    console.log('Deleting files:');
+    console.log(colors.bgBlue('Deleting files:'));
     files.forEach(file => {
         try {
             fs.unlinkSync(file);

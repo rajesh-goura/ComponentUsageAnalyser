@@ -4,7 +4,8 @@ import { Component, TrackerMaps, createTrackerMaps } from './types';
 import { collectComponents } from './component-collector';
 import { trackComponentUsages } from './usage-tracker';
 import { trackImports } from './import-tracker';
-
+import colors from 'yoctocolors';
+/// Scans a React/React Native codebase for components and their usage
 export function scanComponents(rootPath: string) {
   const files = globSync([
     `${rootPath}/**/*.{jsx,tsx}`,
@@ -13,7 +14,7 @@ export function scanComponents(rootPath: string) {
   ]);
 
   const components: Component[] = [];
-  const trackerMaps = createTrackerMaps();
+  const trackerMaps : TrackerMaps = createTrackerMaps();
 
   // First pass: collect all components
   files.forEach((file) => {
@@ -21,7 +22,7 @@ export function scanComponents(rootPath: string) {
       const fileComponents = collectComponents(file);
       components.push(...fileComponents);
     } catch (error) {
-      console.warn(`Error parsing ${file}:`, error instanceof Error ? error.message : String(error));
+      console.warn(colors.red(`Error parsing ${file}: ${error instanceof Error ? error.message : String(error)}`));
     }
   });
 
@@ -31,7 +32,7 @@ export function scanComponents(rootPath: string) {
       trackComponentUsages(file, trackerMaps);
       trackImports(file, trackerMaps);
     } catch (error) {
-      console.warn(`Error parsing ${file}:`, error instanceof Error ? error.message : String(error));
+      console.warn(colors.red(`Error parsing ${file}: ${error instanceof Error ? error.message : String(error)}`));
     }
   });
 

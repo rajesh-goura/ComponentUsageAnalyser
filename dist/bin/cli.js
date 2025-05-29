@@ -34,23 +34,23 @@ const options = program.opts();
 if (options.analyze) {
     const components = (0, scanner_1.scanComponents)(options.analyze);
     if (components.length === 0) {
-        console.log('No components found in the specified path.');
+        console.log(yoctocolors_1.default.bgYellow('No components found in the specified path.'));
     }
     else {
         const usedComponents = components.filter(c => c.isUsed);
         const unusedComponents = components.filter(c => !c.isUsed);
-        console.log('\nFound components:');
+        console.log(yoctocolors_1.default.bgBlue('\nFound components:'));
         components.forEach(comp => {
-            console.log(`- ${comp.name} (${comp.file}) ${comp.isUsed ? '[USED]' : '[UNUSED]'}`);
+            console.log(yoctocolors_1.default.green(`- ${comp.name} (${comp.file}) ${comp.isUsed ? '[USED]' : '[UNUSED]'}`));
         });
-        console.log('\nSummary:');
-        console.log(`- Total components: ${components.length}`);
-        console.log(`- Used components: ${usedComponents.length}`);
-        console.log(`- Unused components: ${unusedComponents.length}`);
+        console.log(yoctocolors_1.default.bgBlue('\nSummary:'));
+        console.log(yoctocolors_1.default.blue(`- Total components: ${components.length}`));
+        console.log(yoctocolors_1.default.green(`- Used components: ${usedComponents.length}`));
+        console.log(yoctocolors_1.default.red(`- Unused components: ${unusedComponents.length}`));
         if (unusedComponents.length > 0) {
-            console.log('\nUnused components:');
+            console.log(yoctocolors_1.default.bgRed('\nUnused components:'));
             unusedComponents.forEach(comp => {
-                console.log(`- ${comp.name} (${comp.file})`);
+                console.log(yoctocolors_1.default.red(`- ${comp.name} (${comp.file})`));
             });
             inquirer_1.default
                 .prompt([
@@ -67,7 +67,7 @@ if (options.analyze) {
                     (0, deleteFiles_1.deleteFiles)(unusedFiles);
                 }
                 else {
-                    console.log(yoctocolors_1.default.gray("Skipped file deletion."));
+                    console.log(yoctocolors_1.default.bgGray("Skipped file deletion."));
                 }
             });
         }

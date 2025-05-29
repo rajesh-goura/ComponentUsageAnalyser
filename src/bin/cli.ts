@@ -37,27 +37,27 @@ if (options.analyze) {
   const components = scanComponents(options.analyze);
   
   if (components.length === 0) {
-    console.log('No components found in the specified path.');
+    console.log(colors.bgYellow('No components found in the specified path.'));
   } else {
     const usedComponents = components.filter(c => c.isUsed);
     const unusedComponents = components.filter(c => !c.isUsed);
 
-    console.log('\nFound components:');
+    console.log(colors.bgBlue('\nFound components:'));
     components.forEach(comp => {
-      console.log(`- ${comp.name} (${comp.file}) ${comp.isUsed ? '[USED]' : '[UNUSED]'}`);
+      console.log(colors.green(`- ${comp.name} (${comp.file}) ${comp.isUsed ? '[USED]' : '[UNUSED]'}`));
     });
 
-    console.log('\nSummary:');
-    console.log(`- Total components: ${components.length}`);
-    console.log(`- Used components: ${usedComponents.length}`);
-    console.log(`- Unused components: ${unusedComponents.length}`);
+    console.log(colors.bgBlue('\nSummary:'));
+    console.log(colors.blue(`- Total components: ${components.length}`));
+    console.log(colors.green(`- Used components: ${usedComponents.length}`));
+    console.log(colors.red(`- Unused components: ${unusedComponents.length}`));
 
     if (unusedComponents.length > 0) {
-      console.log('\nUnused components:');
+      console.log(colors.bgRed('\nUnused components:'));
       unusedComponents.forEach(comp => {
-        console.log(`- ${comp.name} (${comp.file})`);
+        console.log(colors.red(`- ${comp.name} (${comp.file})`));
       });
-          inquirer
+        inquirer
         .prompt([
           {
             type: "confirm",
@@ -71,11 +71,9 @@ if (options.analyze) {
             const unusedFiles = unusedComponents.map((comp) => comp.file);
             deleteFiles(unusedFiles);
           } else {
-            console.log(colors.gray("Skipped file deletion."));
+            console.log(colors.bgGray("Skipped file deletion."));
           }
         });
-
-      
     }
   }
 }
