@@ -1,57 +1,61 @@
 import { globSync } from 'fast-glob';
-import { readFileSync } from 'fs';
-import { parse } from '@babel/parser';
-import traverse from '@babel/traverse';
+import path from 'path';
+import { Component, TrackerMaps, createTrackerMaps } from './types';
+import { collectComponents } from './component-collector';
+import { trackComponentUsages } from './usage-tracker';
+import { trackImports } from './import-tracker';
 
-export function scanComponents(path: string) {
-  // Find all React files
+export function scanComponents(rootPath: string) {
   const files = globSync([
-    `${path}/**/*.{js,jsx,ts,tsx}`,
-    '!**/node_modules/**'
+    `${rootPath}/**/*.{js,jsx,ts,tsx}`,
+    '!**/node_modules/**',
+    '!**/*.d.ts'
   ]);
 
-  // Parse each file and extract components
-  const components: { name: string; file: string }[] = [];
-  
+  const components: Component[] = [];
+  const trackerMaps = createTrackerMaps();
+
+  // First pass: collect all components
   files.forEach((file) => {
-    // Read the file content
     try {
-      const content = readFileSync(file, 'utf-8');
-      const ast = parse(content, {
-        sourceType: 'module',
-        plugins: ['jsx', 'typescript']
-      });
-      // Traverse the AST to find components
-      traverse(ast, {
-        FunctionDeclaration(path) {
-          if (path.node.id?.name.match(/^[A-Z]/)) {
-            components.push({
-              name: path.node.id.name,
-              file: file
-            });
-          }
-        },
-        VariableDeclarator(path) {
-          if (
-            path.node.id.type === 'Identifier' &&
-            path.node.id.name.match(/^[A-Z]/) &&
-            path.node.init?.type === 'ArrowFunctionExpression'
-          ) {
-            components.push({
-              name: path.node.id.name,
-              file: file
-            });
-          }
-        }
-      });
+      const fileComponents = collectComponents(file);
+      components.push(...fileComponents);
     } catch (error) {
-      // Handle errors in reading or parsing the file
-      if (error instanceof Error) {
-        console.warn(`Failed to parse ${file}: ${error.message}`);
-      } else {
-        console.warn(`Failed to parse ${file}: ${String(error)}`);
-      }
+      console.warn(`Error parsing ${file}:`, error instanceof Error ? error.message : String(error));
     }
   });
+
+  // Second pass: track usages and imports
+  files.forEach((file) => {
+    try {
+      trackComponentUsages(file, trackerMaps);
+      trackImports(file, trackerMaps);
+    } catch (error) {
+      console.warn(`Error parsing ${file}:`, error instanceof Error ? error.message : String(error));
+    }
+  });
+
+  // Mark components as used and track usage locations
+  components.forEach(comp => {
+    const fileName = path.basename(comp.file, path.extname(comp.file));
+    const usageLocations = trackerMaps.componentUsages.get(comp.name) || new Set();
+    const importLocations = trackerMaps.importedComponents.get(comp.name) || new Set();
+
+    // Only mark as used if:
+    // 1. Actually used in JSX/HOC/Navigation, or
+    // 2. Imported explicitly (and not just defined)
+    comp.isUsed = usageLocations.size > 0 || importLocations.size > 0;
+    
+    // Add usage information if available
+    if (comp.isUsed) {
+      comp.usedIn = [
+        ...usageLocations,
+        ...importLocations
+      ].filter((value, index, self) => 
+        self.indexOf(value) === index
+      );
+    }
+  });
+
   return components;
 }
