@@ -33,12 +33,28 @@ const options = program.opts();
 // Handling the 'getFiles' option
 if (options.analyze) {
   const components = scanComponents(options.analyze);
+  
   if (components.length === 0) {
     console.log('No components found in the specified path.');
   } else {
+    const usedComponents = components.filter(c => c.isUsed);
+    const unusedComponents = components.filter(c => !c.isUsed);
+
     console.log('\nFound components:');
     components.forEach(comp => {
-      console.log(`- ${comp.name} (${comp.file})`);
+      console.log(`- ${comp.name} (${comp.file}) ${comp.isUsed ? '[USED]' : '[UNUSED]'}`);
     });
+
+    console.log('\nSummary:');
+    console.log(`- Total components: ${components.length}`);
+    console.log(`- Used components: ${usedComponents.length}`);
+    console.log(`- Unused components: ${unusedComponents.length}`);
+
+    if (unusedComponents.length > 0) {
+      console.log('\nUnused components:');
+      unusedComponents.forEach(comp => {
+        console.log(`- ${comp.name} (${comp.file})`);
+      });
+    }
   }
 }
