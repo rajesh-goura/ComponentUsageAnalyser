@@ -25,7 +25,7 @@ console.log(figlet.textSync("CUA Tool"));
 program
   .version("1.0.0")
   .description("CLI tool for React/React Native component usage analysis")
-  .option("-a, --analyze <path>", "Scans a React/React Native codebase for component usage")
+  .option("-a, --analyze [path]", "Scans a React/React Native codebase for component usage")
   .option("-g, --getFiles <path>", "Scans a React/React Native codebase for relevant source files")
   .option("-d, --deleteUnused <path>", "Scan and delete unused component files")
   .parse(process.argv);
@@ -90,9 +90,11 @@ async function handleUnusedFileDeletion(unusedComponents: any[]) {
 // Main async function to run the CLI
 async function runCLI() {
   if (options.analyze) {
-    const components = scanComponents(options.analyze);
+    const scanPath = typeof options.analyze === "string" ? options.analyze : process.cwd();
+    const components = scanComponents(scanPath);
     displayAnalysisResults(components);
-  } else if (options.deleteUnused) {
+  }
+ else if (options.deleteUnused) {
     const components = scanComponents(options.deleteUnused);
     const unusedComponents = displayAnalysisResults(components);
     if (unusedComponents) {

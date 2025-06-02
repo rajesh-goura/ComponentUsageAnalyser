@@ -8,7 +8,7 @@ import colors from 'yoctocolors';
 /// Scans a React/React Native codebase for components and their usage
 export function scanComponents(rootPath: string) {
   const files = globSync([
-    `${rootPath}/**/*.{jsx,tsx,ts,js}`,
+    `${rootPath}/**/*.{jsx,tsx}`,
     '!**/node_modules/**',
     '!**/*.d.ts'
   ]);
