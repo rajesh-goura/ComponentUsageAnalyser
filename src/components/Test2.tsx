@@ -7,6 +7,7 @@ const Test2 = () => {
     <View>
         <Text>Test2</Text>
         <TestComponent />
+       
     </View>
   )
 }

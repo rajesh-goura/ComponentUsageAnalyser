@@ -41,12 +41,31 @@ function displayAnalysisResults(components) {
     const unusedComponents = components.filter(c => !c.isUsed);
     console.log(yoctocolors_1.default.bgBlue('\nFound components:'));
     components.forEach(comp => {
-        console.log(yoctocolors_1.default.green(`- ${comp.name} (${comp.file}) ${comp.isUsed ? '[USED]' : '[UNUSED]'}`));
+        const usageInfo = comp.isUsed
+            ? `[USED ${comp.usageCount} time${comp.usageCount !== 1 ? 's' : ''}]`
+            : '[UNUSED]';
+        console.log(yoctocolors_1.default.green(`- ${comp.name} (${comp.file}) ${usageInfo}`));
+        if (comp.isUsed && comp.usedIn?.length) {
+            console.log(yoctocolors_1.default.cyan(`  ↳ Used in: ${comp.usedIn.length} file${comp.usedIn.length !== 1 ? 's' : ''}`));
+        }
     });
     console.log(yoctocolors_1.default.bgBlue('\nSummary:'));
     console.log(yoctocolors_1.default.blue(`- Total components: ${components.length}`));
     console.log(yoctocolors_1.default.green(`- Used components: ${usedComponents.length}`));
     console.log(yoctocolors_1.default.red(`- Unused components: ${unusedComponents.length}`));
+    // Show top 5 most used components
+    const topUsed = [...usedComponents]
+        .sort((a, b) => b.usageCount - a.usageCount)
+        .slice(0, 5);
+    if (topUsed.length > 0) {
+        console.log(yoctocolors_1.default.bgMagenta('\nTop Used Components:'));
+        topUsed.forEach((comp, index) => {
+            console.log(yoctocolors_1.default.magenta(`${index + 1}. ${comp.name}: ${comp.usageCount} usage${comp.usageCount !== 1 ? 's' : ''}`));
+            if (comp.usedIn?.length) {
+                console.log(yoctocolors_1.default.gray(`  ↳ Used in: ${comp.usedIn.join(', ')}`));
+            }
+        });
+    }
     if (unusedComponents.length > 0) {
         console.log(yoctocolors_1.default.bgRed('\nUnused components:'));
         unusedComponents.forEach(comp => {
@@ -68,10 +87,36 @@ async function handleUnusedFileDeletion(unusedComponents) {
             message: "Do you want to delete these unused component files?",
             default: false,
         },
+        {
+            type: "confirm",
+            name: "showDetails",
+            message: "Show details of unused components before deletion?",
+            default: true,
+            when: (answers) => answers.confirmDelete
+        }
     ]);
     if (answers.confirmDelete) {
-        const unusedFiles = unusedComponents.map((comp) => comp.file);
-        (0, deleteFiles_1.deleteFiles)(unusedFiles);
+        if (answers.showDetails) {
+            console.log(yoctocolors_1.default.bgYellow('\nUnused Components to be deleted:'));
+            unusedComponents.forEach(comp => {
+                console.log(yoctocolors_1.default.yellow(`- ${comp.name} (${comp.file})`));
+            });
+        }
+        const confirmFinal = await inquirer_1.default.prompt([
+            {
+                type: "confirm",
+                name: "finalConfirm",
+                message: `Are you sure you want to delete ${unusedComponents.length} unused component files?`,
+                default: false
+            }
+        ]);
+        if (confirmFinal.finalConfirm) {
+            const unusedFiles = unusedComponents.map((comp) => comp.file);
+            (0, deleteFiles_1.deleteFiles)(unusedFiles);
+        }
+        else {
+            console.log(yoctocolors_1.default.bgGray("Deletion cancelled."));
+        }
     }
     else {
         console.log(yoctocolors_1.default.bgGray("Skipped file deletion."));
