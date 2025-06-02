@@ -23,7 +23,8 @@ export function collectComponents(file: string): Component[] {
         components.push({
           name: path.node.id.name,
           file,
-          isUsed: false
+          isUsed: false,
+          usageCount: 0 // Initialize usage count
         });
       }
     },
@@ -38,7 +39,8 @@ export function collectComponents(file: string): Component[] {
         components.push({
           name: path.node.id.name,
           file,
-          isUsed: false
+          isUsed: false,
+          usageCount: 0 // Initialize usage count
         });
       }
     },
@@ -48,7 +50,8 @@ export function collectComponents(file: string): Component[] {
         components.push({
           name: path.node.id.name,
           file,
-          isUsed: false
+          isUsed: false,
+          usageCount: 0 // Initialize usage count
         });
       }
     }

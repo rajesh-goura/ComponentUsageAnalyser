@@ -4,6 +4,7 @@ export interface Component {
   name: string;
   file: string;
   isUsed: boolean;
+  usageCount: number; // New field for usage count
   usedIn?: string[]; // Optional: tracks where component is used
 }
 
