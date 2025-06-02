@@ -39,8 +39,19 @@ function displayAnalysisResults(components) {
     }
     const usedComponents = components.filter(c => c.isUsed);
     const unusedComponents = components.filter(c => !c.isUsed);
+    // Sort components by usage count (highest to lowest), then unused components
+    const sortedComponents = [...components].sort((a, b) => {
+        if (a.isUsed && b.isUsed) {
+            return b.usageCount - a.usageCount;
+        }
+        if (a.isUsed)
+            return -1;
+        if (b.isUsed)
+            return 1;
+        return 0;
+    });
     console.log(yoctocolors_1.default.bgBlue('\nFound components:'));
-    components.forEach(comp => {
+    sortedComponents.forEach(comp => {
         const usageInfo = comp.isUsed
             ? `[USED ${comp.usageCount} time${comp.usageCount !== 1 ? 's' : ''}]`
             : '[UNUSED]';

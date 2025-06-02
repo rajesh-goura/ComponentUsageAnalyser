@@ -43,8 +43,18 @@ function displayAnalysisResults(components: any[]) {
   const usedComponents = components.filter(c => c.isUsed);
   const unusedComponents = components.filter(c => !c.isUsed);
 
+  // Sort components by usage count (highest to lowest), then unused components
+  const sortedComponents = [...components].sort((a, b) => {
+    if (a.isUsed && b.isUsed) {
+      return b.usageCount - a.usageCount;
+    }
+    if (a.isUsed) return -1;
+    if (b.isUsed) return 1;
+    return 0;
+  });
+
   console.log(colors.bgBlue('\nFound components:'));
-  components.forEach(comp => {
+  sortedComponents.forEach(comp => {
     const usageInfo = comp.isUsed 
       ? `[USED ${comp.usageCount} time${comp.usageCount !== 1 ? 's' : ''}]` 
       : '[UNUSED]';
