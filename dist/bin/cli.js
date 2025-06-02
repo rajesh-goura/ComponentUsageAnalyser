@@ -17,6 +17,8 @@ const scanner_1 = require("../scanner");
 const yoctocolors_1 = __importDefault(require("yoctocolors"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const deleteFiles_1 = require("../deleteFiles");
+const writeMarkdown_1 = require("../writeMarkdown");
+const displayAnalysis_1 = require("../displayAnalysis");
 // Initializing CLI tool
 const program = new commander_1.Command();
 // Displaying the tool name in ASCII art
@@ -31,55 +33,13 @@ program
     .parse(process.argv);
 // Accessing the parsed options
 const options = program.opts();
-// Function to display component analysis results
-function displayAnalysisResults(components) {
-    if (components.length === 0) {
-        console.log(yoctocolors_1.default.bgYellow('No components found in the specified path.'));
-        return;
-    }
-    const usedComponents = components.filter(c => c.isUsed);
-    const unusedComponents = components.filter(c => !c.isUsed);
-    console.log(yoctocolors_1.default.bgBlue('\nFound components:'));
-    components.forEach(comp => {
-        const usageInfo = comp.isUsed
-            ? `[USED ${comp.usageCount} time${comp.usageCount !== 1 ? 's' : ''}]`
-            : '[UNUSED]';
-        console.log(yoctocolors_1.default.green(`- ${comp.name} (${comp.file}) ${usageInfo}`));
-        if (comp.isUsed && comp.usedIn?.length) {
-            console.log(yoctocolors_1.default.cyan(`  ↳ Used in: ${comp.usedIn.length} file${comp.usedIn.length !== 1 ? 's' : ''}`));
-        }
-    });
-    console.log(yoctocolors_1.default.bgBlue('\nSummary:'));
-    console.log(yoctocolors_1.default.blue(`- Total components: ${components.length}`));
-    console.log(yoctocolors_1.default.green(`- Used components: ${usedComponents.length}`));
-    console.log(yoctocolors_1.default.red(`- Unused components: ${unusedComponents.length}`));
-    // Show top 5 most used components
-    const topUsed = [...usedComponents]
-        .sort((a, b) => b.usageCount - a.usageCount)
-        .slice(0, 5);
-    if (topUsed.length > 0) {
-        console.log(yoctocolors_1.default.bgMagenta('\nTop Used Components:'));
-        topUsed.forEach((comp, index) => {
-            console.log(yoctocolors_1.default.magenta(`${index + 1}. ${comp.name}: ${comp.usageCount} usage${comp.usageCount !== 1 ? 's' : ''}`));
-            if (comp.usedIn?.length) {
-                console.log(yoctocolors_1.default.gray(`  ↳ Used in: ${comp.usedIn.join(', ')}`));
-            }
-        });
-    }
-    if (unusedComponents.length > 0) {
-        console.log(yoctocolors_1.default.bgRed('\nUnused components:'));
-        unusedComponents.forEach(comp => {
-            console.log(yoctocolors_1.default.red(`- ${comp.name} (${comp.file})`));
-        });
-    }
-    return unusedComponents;
-}
 // Function to handle unused file deletion
 async function handleUnusedFileDeletion(unusedComponents) {
     if (unusedComponents.length === 0) {
         console.log(yoctocolors_1.default.bgYellow('\nNo unused components to delete.'));
         return;
     }
+    // Prompt user for confirmation before deletion
     const answers = await inquirer_1.default.prompt([
         {
             type: "confirm",
@@ -95,6 +55,7 @@ async function handleUnusedFileDeletion(unusedComponents) {
             when: (answers) => answers.confirmDelete
         }
     ]);
+    // If user confirms deletion, show details if requested
     if (answers.confirmDelete) {
         if (answers.showDetails) {
             console.log(yoctocolors_1.default.bgYellow('\nUnused Components to be deleted:'));
@@ -102,6 +63,7 @@ async function handleUnusedFileDeletion(unusedComponents) {
                 console.log(yoctocolors_1.default.yellow(`- ${comp.name} (${comp.file})`));
             });
         }
+        // Confirm final deletion
         const confirmFinal = await inquirer_1.default.prompt([
             {
                 type: "confirm",
@@ -110,6 +72,7 @@ async function handleUnusedFileDeletion(unusedComponents) {
                 default: false
             }
         ]);
+        // If user confirms final deletion, proceed with deletion
         if (confirmFinal.finalConfirm) {
             const unusedFiles = unusedComponents.map((comp) => comp.file);
             (0, deleteFiles_1.deleteFiles)(unusedFiles);
@@ -127,11 +90,13 @@ async function runCLI() {
     if (options.analyze) {
         const scanPath = typeof options.analyze === "string" ? options.analyze : process.cwd();
         const components = (0, scanner_1.scanComponents)(scanPath);
-        displayAnalysisResults(components);
+        (0, displayAnalysis_1.displayAnalysisResults)(components);
+        (0, writeMarkdown_1.writeMarkdownReport)(components);
     }
+    // If the user wants to get files, we will scan and display them
     else if (options.deleteUnused) {
         const components = (0, scanner_1.scanComponents)(options.deleteUnused);
-        const unusedComponents = displayAnalysisResults(components);
+        const unusedComponents = (0, displayAnalysis_1.displayAnalysisResults)(components);
         if (unusedComponents) {
             await handleUnusedFileDeletion(unusedComponents);
         }

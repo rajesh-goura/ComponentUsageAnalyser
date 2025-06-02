@@ -14,6 +14,8 @@ import { scanComponents } from "../scanner";
 import colors from "yoctocolors";
 import inquirer from "inquirer";
 import { deleteFiles } from "../deleteFiles";
+import { writeMarkdownReport } from "../writeMarkdown";
+import { displayAnalysisResults } from "../displayAnalysis";
 
 // Initializing CLI tool
 const program = new Command();
@@ -33,57 +35,6 @@ program
 // Accessing the parsed options
 const options = program.opts();
 
-// Function to display component analysis results
-function displayAnalysisResults(components: any[]) {
-  if (components.length === 0) {
-    console.log(colors.bgYellow('No components found in the specified path.'));
-    return;
-  }
-
-  const usedComponents = components.filter(c => c.isUsed);
-  const unusedComponents = components.filter(c => !c.isUsed);
-
-  console.log(colors.bgBlue('\nFound components:'));
-  components.forEach(comp => {
-    const usageInfo = comp.isUsed 
-      ? `[USED ${comp.usageCount} time${comp.usageCount !== 1 ? 's' : ''}]` 
-      : '[UNUSED]';
-    console.log(colors.green(`- ${comp.name} (${comp.file}) ${usageInfo}`));
-    if (comp.isUsed && comp.usedIn?.length) {
-      console.log(colors.cyan(`  ↳ Used in: ${comp.usedIn.length} file${comp.usedIn.length !== 1 ? 's' : ''}`));
-    }
-  });
-
-  console.log(colors.bgBlue('\nSummary:'));
-  console.log(colors.blue(`- Total components: ${components.length}`));
-  console.log(colors.green(`- Used components: ${usedComponents.length}`));
-  console.log(colors.red(`- Unused components: ${unusedComponents.length}`));
-  
-  // Show top 5 most used components
-  const topUsed = [...usedComponents]
-    .sort((a, b) => b.usageCount - a.usageCount)
-    .slice(0, 5);
-    
-  if (topUsed.length > 0) {
-    console.log(colors.bgMagenta('\nTop Used Components:'));
-    topUsed.forEach((comp, index) => {
-      console.log(colors.magenta(`${index + 1}. ${comp.name}: ${comp.usageCount} usage${comp.usageCount !== 1 ? 's' : ''}`));
-      if (comp.usedIn?.length) {
-        console.log(colors.gray(`  ↳ Used in: ${comp.usedIn.join(', ')}`));
-      }
-    });
-  }
-
-  if (unusedComponents.length > 0) {
-    console.log(colors.bgRed('\nUnused components:'));
-    unusedComponents.forEach(comp => {
-      console.log(colors.red(`- ${comp.name} (${comp.file})`));
-    });
-  }
-
-  return unusedComponents;
-}
-
 // Function to handle unused file deletion
 async function handleUnusedFileDeletion(unusedComponents: any[]) {
   if (unusedComponents.length === 0) {
@@ -91,6 +42,7 @@ async function handleUnusedFileDeletion(unusedComponents: any[]) {
     return;
   }
 
+  // Prompt user for confirmation before deletion
   const answers = await inquirer.prompt([
     {
       type: "confirm",
@@ -107,6 +59,7 @@ async function handleUnusedFileDeletion(unusedComponents: any[]) {
     }
   ]);
 
+  // If user confirms deletion, show details if requested
   if (answers.confirmDelete) {
     if (answers.showDetails) {
       console.log(colors.bgYellow('\nUnused Components to be deleted:'));
@@ -115,6 +68,7 @@ async function handleUnusedFileDeletion(unusedComponents: any[]) {
       });
     }
     
+    // Confirm final deletion
     const confirmFinal = await inquirer.prompt([
       {
         type: "confirm",
@@ -123,7 +77,7 @@ async function handleUnusedFileDeletion(unusedComponents: any[]) {
         default: false
       }
     ]);
-
+// If user confirms final deletion, proceed with deletion
     if (confirmFinal.finalConfirm) {
       const unusedFiles = unusedComponents.map((comp) => comp.file);
       deleteFiles(unusedFiles);
@@ -141,7 +95,9 @@ async function runCLI() {
     const scanPath = typeof options.analyze === "string" ? options.analyze : process.cwd();
     const components = scanComponents(scanPath);
     displayAnalysisResults(components);
+    writeMarkdownReport(components);
   }
+  // If the user wants to get files, we will scan and display them
  else if (options.deleteUnused) {
     const components = scanComponents(options.deleteUnused);
     const unusedComponents = displayAnalysisResults(components);
