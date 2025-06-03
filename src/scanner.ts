@@ -42,7 +42,6 @@ export function scanComponents(rootPath: string) {
 
   // Mark components as used and track usage locations
   components.forEach(comp => {
-    const fileName = path.basename(comp.file, path.extname(comp.file));
     const usageLocations = trackerMaps.componentUsages.get(comp.name) || new Set();
     const importLocations = trackerMaps.importedComponents.get(comp.name) || new Set();
 

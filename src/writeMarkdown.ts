@@ -1,6 +1,7 @@
 import path from "path";
 import fs from "fs";
 import colors from "yoctocolors";
+import markdownpdf from "markdown-pdf";
 
 // Function to write a markdown report of component usage
 function writeMarkdownReport(components: any[], outputPath = "component-report.md") {
@@ -54,11 +55,19 @@ function writeMarkdownReport(components: any[], outputPath = "component-report.m
       content += `- **${comp.name}** (${comp.file})\n`;
     });
     content += `\n`;
+    content += 'Please run: `--deleteUnused` to remove these unused components.\n';
   }
 
   // Write to file
   const fullPath = path.join(process.cwd(), outputPath);
   fs.writeFileSync(fullPath, content, "utf8");
+
+  const pdfPath = fullPath.replace(/\.md$/, ".pdf");
+  markdownpdf()
+    .from(fullPath)
+    .to(pdfPath, () => {
+      console.log(colors.bgGreen(`PDF report generated at ${pdfPath}`));
+    });
 
   console.log(colors.bgGreen(`\nMarkdown report generated at ${outputPath}`));
 }

@@ -28,86 +28,87 @@ program
   .version("1.0.0")
   .description("CLI tool for React/React Native component usage analysis")
   .option("-a, --analyze [path]", "Scans a React/React Native codebase for component usage")
-  .option("-g, --getFiles <path>", "Scans a React/React Native codebase for relevant source files")
-  .option("-d, --deleteUnused <path>", "Scan and delete unused component files")
+  .option("-d, --deleteUnused [path]", "Scan and delete unused component files")
+  .option("-g, --generateReport [path]", "Generate report for component usage")
   .parse(process.argv);
 
 // Accessing the parsed options
 const options = program.opts();
+async function runCLI() {
+  const scanPath =
+    typeof (options.analyze || options.deleteUnused) === "string"
+      ? options.analyze || options.deleteUnused
+      : process.cwd();
 
-// Function to handle unused file deletion
-async function handleUnusedFileDeletion(unusedComponents: any[]) {
-  if (unusedComponents.length === 0) {
-    console.log(colors.bgYellow('\nNo unused components to delete.'));
+  // Analyze mode: Display usage and write reports
+  if (options.analyze) {
+    const components = scanComponents(scanPath);
+    displayAnalysisResults(components);
+
+    const { generateReport } = await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "generateReport",
+        message: "Do you want to generate the report for component usage?",
+        default: false,
+      },
+    ]);
+    if (generateReport) {
+      writeMarkdownReport(components);
+    }
     return;
   }
 
-  // Prompt user for confirmation before deletion
-  const answers = await inquirer.prompt([
-    {
-      type: "confirm",
-      name: "confirmDelete",
-      message: "Do you want to delete these unused component files?",
-      default: false,
-    },
-    {
-      type: "confirm",
-      name: "showDetails",
-      message: "Show details of unused components before deletion?",
-      default: true,
-      when: (answers) => answers.confirmDelete
-    }
-  ]);
+  // Delete unused components mode
+  if (options.deleteUnused) {
+  const scanPath = typeof options.deleteUnused === "string" ? options.deleteUnused : process.cwd();
+    const components = scanComponents(scanPath);
+    const unusedComponents = components.filter((c) => !c.isUsed);
 
-  // If user confirms deletion, show details if requested
-  if (answers.confirmDelete) {
-    if (answers.showDetails) {
-      console.log(colors.bgYellow('\nUnused Components to be deleted:'));
-      unusedComponents.forEach(comp => {
-        console.log(colors.yellow(`- ${comp.name} (${comp.file})`));
-      });
+    if (unusedComponents.length === 0) {
+      console.log(colors.bgGreen("\n🎉 No unused components found."));
+      return;
     }
-    
-    // Confirm final deletion
-    const confirmFinal = await inquirer.prompt([
+
+    // extracting unused files
+    const unusedFiles = unusedComponents.map((comp) => comp.file);
+
+    // Asking for delete confirmation
+    const { confirmDelete } = await inquirer.prompt([
       {
         type: "confirm",
-        name: "finalConfirm",
-        message: `Are you sure you want to delete ${unusedComponents.length} unused component files?`,
-        default: false
-      }
+        name: "confirmDelete",
+        message: `Do you want to delete the following unused component files? \n\n${unusedFiles.map((file) => `- ${file}`).join("\n")}\n`,
+        default: false,
+      },
     ]);
-// If user confirms final deletion, proceed with deletion
-    if (confirmFinal.finalConfirm) {
-      const unusedFiles = unusedComponents.map((comp) => comp.file);
-      deleteFiles(unusedFiles);
-    } else {
-      console.log(colors.bgGray("Deletion cancelled."));
-    }
-  } else {
-    console.log(colors.bgGray("Skipped file deletion."));
-  }
-}
 
-// Main async function to run the CLI
-async function runCLI() {
-  if (options.analyze) {
-    const scanPath = typeof options.analyze === "string" ? options.analyze : process.cwd();
-    const components = scanComponents(scanPath);
-    displayAnalysisResults(components);
-    writeMarkdownReport(components);
+    if (confirmDelete) {
+      const deletedFiles = deleteFiles(unusedFiles);
+      if (deletedFiles.length > 0) {
+          console.log(colors.bgRed(`\nDeleted ${deletedFiles.length} unused component file(s):`));
+          deletedFiles.forEach((file) => {
+            const comp = unusedComponents.find(c => c.file === file);
+            if (comp) {
+              console.log(colors.red(`- ${comp.name} (${comp.file})`));
+            } else {
+              console.log(colors.red(`- ${file}`));
+            }
+          });
+          console.log(colors.bgGray("\n Please run/re-run the analysis generate updated report."));
+        } else {
+          console.log(colors.bgGray("\nNo files were deleted."));
+        }
+      } else {
+        console.log(colors.bgGray("Skipped file deletion."));
+      }
   }
-  // If the user wants to get files, we will scan and display them
- else if (options.deleteUnused) {
-    const components = scanComponents(options.deleteUnused);
-    const unusedComponents = displayAnalysisResults(components);
-    if (unusedComponents) {
-      await handleUnusedFileDeletion(unusedComponents);
-    }
+  // if command is generateReport a report is gnerated
+  else if( options.generateReport) {
+    writeMarkdownReport(scanComponents(scanPath));
   }
-}
+} 
 
-// Execute the CLI
 runCLI().catch((error) => {
   console.error(colors.bgRed('Error:'), error);
   process.exit(1);

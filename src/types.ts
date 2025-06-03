@@ -1,4 +1,3 @@
-import path from 'path';
 
 export interface Component {
   name: string;
@@ -13,6 +12,7 @@ export interface TrackerMaps {
   importedComponents: Map<string, Set<string>>; // Tracks import locations
 }
 
+//Creates and initializes the tracker maps for component usage and imports
 export function createTrackerMaps(): TrackerMaps {
   return {
     componentUsages: new Map<string, Set<string>>(),
