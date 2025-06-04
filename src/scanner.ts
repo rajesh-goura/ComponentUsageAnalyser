@@ -7,9 +7,10 @@ import { trackImports } from './import-tracker';
 import colors from 'yoctocolors';
 
 /// Scans a React/React Native codebase for components and their usage
-export function scanComponents(rootPath: string) {
+export function scanComponents(rootPath: string, projectRoot: string) {
+  const absoluteRootPath = path.resolve(rootPath);
   const files = globSync([
-    `${rootPath}/**/*.{jsx,tsx}`,
+    `${absoluteRootPath}/**/*.{jsx,tsx}`,
     '!**/node_modules/**',
     '!**/*.d.ts'
   ]);
@@ -22,6 +23,7 @@ export function scanComponents(rootPath: string) {
     try {
       const fileComponents = collectComponents(file).map(comp => ({
         ...comp,
+        file: path.relative(projectRoot, comp.file),
         usageCount: 0 // Initialize usage count
       }));
       components.push(...fileComponents);
@@ -56,7 +58,9 @@ export function scanComponents(rootPath: string) {
       comp.usedIn = [
         ...usageLocations,
         ...importLocations
-      ].filter((value, index, self) => 
+      ]
+      .map(location => path.relative(projectRoot, location))
+      .filter((value, index, self) => 
         self.indexOf(value) === index
       );
     }
