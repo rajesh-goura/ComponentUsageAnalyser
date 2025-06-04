@@ -16,6 +16,7 @@ import inquirer from "inquirer";
 import { deleteFiles } from "../deleteFiles";
 import { writeMarkdownReport } from "../writeMarkdown";
 import { displayAnalysisResults } from "../displayAnalysis";
+import path from "path";
 
 // Initializing CLI tool
 const program = new Command();
@@ -34,15 +35,34 @@ program
 
 // Accessing the parsed options
 const options = program.opts();
+
+function getProjectRoot(scanPath: string): string {
+  const absolutePath = path.resolve(scanPath);
+  const coinPayIndex = absolutePath.indexOf('CoinPay');
+  
+  if (coinPayIndex !== -1) {
+    return path.join(absolutePath.substring(0, coinPayIndex), 'CoinPay');
+  }
+  return absolutePath;
+}
+
+function getRelativePath(fullPath: string, projectRoot: string): string {
+  const relativePath = path.relative(projectRoot, fullPath);
+  return relativePath.startsWith('..') ? fullPath : `CoinPay/${relativePath}`;
+}
+
 async function runCLI() {
   const scanPath =
-    typeof (options.analyze || options.deleteUnused) === "string"
-      ? options.analyze || options.deleteUnused
+    typeof (options.analyze || options.deleteUnused || options.generateReport) === "string"
+      ? options.analyze || options.deleteUnused || options.generateReport
       : process.cwd();
+
+  const absoluteScanPath = path.resolve(scanPath);
+  const projectRoot = getProjectRoot(absoluteScanPath);
 
   // Analyze mode: Display usage and write reports
   if (options.analyze) {
-    const components = scanComponents(scanPath);
+    const components = scanComponents(absoluteScanPath, projectRoot);
     displayAnalysisResults(components);
 
     const { generateReport } = await inquirer.prompt([
@@ -61,8 +81,7 @@ async function runCLI() {
 
   // Delete unused components mode
   if (options.deleteUnused) {
-  const scanPath = typeof options.deleteUnused === "string" ? options.deleteUnused : process.cwd();
-    const components = scanComponents(scanPath);
+    const components = scanComponents(absoluteScanPath, projectRoot);
     const unusedComponents = components.filter((c) => !c.isUsed);
 
     if (unusedComponents.length === 0) {
@@ -73,12 +92,17 @@ async function runCLI() {
     // extracting unused files
     const unusedFiles = unusedComponents.map((comp) => comp.file);
 
+    // Display relative paths in confirmation message
+    const relativeUnusedFiles = unusedFiles.map(file => 
+      `- ${getRelativePath(file, projectRoot)}`
+    ).join("\n");
+
     // Asking for delete confirmation
     const { confirmDelete } = await inquirer.prompt([
       {
         type: "confirm",
         name: "confirmDelete",
-        message: `Do you want to delete the following unused component files? \n\n${unusedFiles.map((file) => `- ${file}`).join("\n")}\n`,
+        message: `Do you want to delete the following unused component files? \n\n${relativeUnusedFiles}\n`,
         default: false,
       },
     ]);
@@ -86,28 +110,29 @@ async function runCLI() {
     if (confirmDelete) {
       const deletedFiles = deleteFiles(unusedFiles);
       if (deletedFiles.length > 0) {
-          console.log(colors.bgRed(`\nDeleted ${deletedFiles.length} unused component file(s):`));
-          deletedFiles.forEach((file) => {
-            const comp = unusedComponents.find(c => c.file === file);
-            if (comp) {
-              console.log(colors.red(`- ${comp.name} (${comp.file})`));
-            } else {
-              console.log(colors.red(`- ${file}`));
-            }
-          });
-          console.log(colors.bgGray("\n Please run/re-run the analysis generate updated report."));
-        } else {
-          console.log(colors.bgGray("\nNo files were deleted."));
-        }
+        console.log(colors.bgRed(`\nDeleted ${deletedFiles.length} unused component file(s):`));
+        deletedFiles.forEach((file) => {
+          const comp = unusedComponents.find(c => c.file === file);
+          if (comp) {
+            console.log(colors.red(`- ${comp.name} (${getRelativePath(comp.file, projectRoot)})`));
+          } else {
+            console.log(colors.red(`- ${getRelativePath(file, projectRoot)}`));
+          }
+        });
+        console.log(colors.bgGray("\n Please run/re-run the analysis generate updated report."));
       } else {
-        console.log(colors.bgGray("Skipped file deletion."));
+        console.log(colors.bgGray("\nNo files were deleted."));
       }
+    } else {
+      console.log(colors.bgGray("Skipped file deletion."));
+    }
   }
-  // if command is generateReport a report is gnerated
-  else if( options.generateReport) {
-    writeMarkdownReport(scanComponents(scanPath));
+  // if command is generateReport a report is generated
+  else if (options.generateReport) {
+    const components = scanComponents(absoluteScanPath, projectRoot);
+    writeMarkdownReport(components);
   }
-} 
+}
 
 runCLI().catch((error) => {
   console.error(colors.bgRed('Error:'), error);
