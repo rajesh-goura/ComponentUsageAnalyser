@@ -1,4 +1,4 @@
-# 📦 CUA Tool - Component Usage Analyzer CLI
+# 📦 CUA Tool - Component Usage Analyzer Tool
 
 A powerful Command Line Interface (CLI) utility designed to scan React and React Native codebases. It helps developers analyze component usage, identify unused components, and even automate the deletion of those components. This tool is invaluable for maintaining clean, efficient, and optimized front-end projects.
 
@@ -20,7 +20,7 @@ A powerful Command Line Interface (CLI) utility designed to scan React and React
 ### CLI Options
 
 ```bash
-cua-tool --help
+cua --help
 ```
 
 - `-a, --analyze [path]`: Scan codebase for component usage.
@@ -32,9 +32,9 @@ _please note_ -> providing path is optional, if not given the tool scans through
 ### Examples
 
 ```bash
-cua-tool --analyze ./src
-cua-tool --deleteUnused ./components
-cua-tool --generateReport ./app
+cua --analyze ./src
+cua --deleteUnused ./components
+cua --generateReport ./app
 ```
 
 ---
