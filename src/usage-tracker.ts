@@ -3,7 +3,7 @@ import traverse from '@babel/traverse';
 import { readFileSync } from 'fs';
 import { TrackerMaps } from './types';
 
-/// This function tracks component usages in a given file
+/// This function tracks component usages in a given files
 export function trackComponentUsages(file: string, trackerMaps: TrackerMaps) {
   const content = readFileSync(file, 'utf-8');
   const ast = parse(content, {
