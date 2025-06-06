@@ -16,6 +16,7 @@ import inquirer from "inquirer";
 import { deleteFiles } from "../deleteFiles";
 import { writeMarkdownReport } from "../writeMarkdown";
 import { displayAnalysisResults } from "../displayAnalysis";
+import { visualizeComponents } from "../visualizer";
 import path from "path";
 
 // Initializing CLI tool
@@ -31,6 +32,7 @@ program
   .option("-a, --analyze [path]", "Scans a React/React Native codebase for component usage")
   .option("-d, --deleteUnused [path]", "Scan and delete unused component files")
   .option("-g, --generateReport [path]", "Generate report for component usage")
+  .option("-v, --visualize [path]", "Generate component visualization")
   .parse(process.argv);
 
 // Accessing the parsed options
@@ -131,6 +133,13 @@ async function runCLI() {
   else if (options.generateReport) {
     const components = scanComponents(absoluteScanPath, projectRoot);
     writeMarkdownReport(components);
+  }
+  if (options.visualize) {
+    const components = scanComponents(absoluteScanPath, projectRoot);
+    console.log(colors.blue("\nGenerating component visualization..."));
+    await visualizeComponents(components);
+    console.log(colors.green("\nVisualization generated and opened in your default browser."));
+    return;
   }
 }
 

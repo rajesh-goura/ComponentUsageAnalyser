@@ -17,8 +17,10 @@
   "dependencies": {
     "@babel/parser": "^7.27.2",
     "@babel/traverse": "^7.27.1",
+    "@types/cytoscape": "^3.21.9",
     "chalk": "^5.4.1",
     "commander": "^14.0.0",
+    "cytoscape": "^3.32.0",
     "fast-glob": "^3.3.3",
     "figlet": "^1.8.1",
     "inquirer": "^12.6.3",
