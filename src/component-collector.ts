@@ -1,8 +1,10 @@
 import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
 import { readFileSync } from 'fs';
+
 import { Component } from './types';
 
+// Function to collect components from a given file
 export function collectComponents(file: string): Component[] {
   const components: Component[] = [];
   const content = readFileSync(file, 'utf-8');
