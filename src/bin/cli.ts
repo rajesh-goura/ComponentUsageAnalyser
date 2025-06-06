@@ -9,16 +9,19 @@
  **/
 
 import { Command } from "commander";
-const figlet = require("figlet");
-import { scanComponents } from "../scanner";
 import colors from "yoctocolors";
 import inquirer from "inquirer";
-import { deleteFiles } from "../deleteFiles";
-import { writeMarkdownReport } from "../writeMarkdown";
-import { displayAnalysisResults } from "../displayAnalysis";
-import { visualizeComponents } from "../visualizer";
+const figlet = require("figlet");
+
 import path from "path";
+
+import { scanComponents } from "../scanner";
+import { deleteFiles } from "../deleteFiles";
+import { displayAnalysisResults } from "../displayAnalysis";
 import { generateGraphScreenshot } from "../GenerateGraphScreenShot";
+import { writeMarkdownReport } from "../writeMarkdown";
+import { visualizeComponents } from "../visualizer";
+import { getProjectRoot, getRelativePath } from "../utils/pathResolver";
 
 // Initializing CLI tool
 const program = new Command();
@@ -39,27 +42,14 @@ program
 // Accessing the parsed options
 const options = program.opts();
 
-function getProjectRoot(scanPath: string): string {
-  const absolutePath = path.resolve(scanPath);
-  const coinPayIndex = absolutePath.indexOf('CoinPay');
-  
-  if (coinPayIndex !== -1) {
-    return path.join(absolutePath.substring(0, coinPayIndex), 'CoinPay');
-  }
-  return absolutePath;
-}
-
-function getRelativePath(fullPath: string, projectRoot: string): string {
-  const relativePath = path.relative(projectRoot, fullPath);
-  return relativePath.startsWith('..') ? fullPath : `CoinPay/${relativePath}`;
-}
-
 async function runCLI() {
+  // if path not provided, using current working directory
   const scanPath =
-    typeof (options.analyze || options.deleteUnused || options.generateReport) === "string"
-      ? options.analyze || options.deleteUnused || options.generateReport
+    typeof (options.analyze || options.deleteUnused || options.generateReport || options.visualize) === "string"
+      ? options.analyze || options.deleteUnused || options.generateReport || options.visualize
       : process.cwd();
 
+  // Resolving the absolute path of the scan directory
   const absoluteScanPath = path.resolve(scanPath);
   const projectRoot = getProjectRoot(absoluteScanPath);
 
@@ -77,9 +67,10 @@ async function runCLI() {
       },
     ]);
     if (generateReport) {
+      // Step 1: Visualize components
       await visualizeComponents(components);
 
-      // Step 2: Generate screenshot
+      // Step 2: Generate screenshot of dependency graph
       await generateGraphScreenshot();
 
       // Step 3: Generate markdown report + PDF
@@ -147,6 +138,8 @@ async function runCLI() {
     // Step 3: Generate markdown report + PDF
     writeMarkdownReport(components);
   }
+
+  // if command is visualize, an html visualization is generated
   if (options.visualize) {
     const components = scanComponents(absoluteScanPath, projectRoot);
     console.log(colors.blue("\nGenerating component visualization..."));
@@ -155,7 +148,7 @@ async function runCLI() {
     return;
   }
 }
-
+// errors handled
 runCLI().catch((error) => {
   console.error(colors.bgRed('Error:'), error);
   process.exit(1);

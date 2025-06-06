@@ -1,10 +1,12 @@
 import { globSync } from 'fast-glob';
 import path from 'path';
-import { Component, TrackerMaps, createTrackerMaps } from './types';
-import { collectComponents } from './component-collector';
+import colors from 'yoctocolors';
+
 import { trackComponentUsages } from './usage-tracker';
 import { trackImports } from './import-tracker';
-import colors from 'yoctocolors';
+import { collectComponents } from './component-collector';
+
+import { Component, TrackerMaps, createTrackerMaps } from './types';
 
 /// Scans a React/React Native codebase for components and their usage
 export function scanComponents(rootPath: string, projectRoot: string) {
