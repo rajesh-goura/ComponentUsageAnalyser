@@ -6,8 +6,7 @@ import { trackComponentUsages } from './usage-tracker';
 import { trackImports } from './import-tracker';
 import colors from 'yoctocolors';
 
-/// Scans a React/React Native codebase for components and their usage
-export function scanComponents(rootPath: string, projectRoot: string) {
+export function scanComponents(rootPath: string, projectRoot: string): Component[] {
   const absoluteRootPath = path.resolve(rootPath);
   const files = globSync([
     `${absoluteRootPath}/**/*.{jsx,tsx}`,
@@ -16,55 +15,48 @@ export function scanComponents(rootPath: string, projectRoot: string) {
   ]);
 
   const components: Component[] = [];
-  const trackerMaps: TrackerMaps = createTrackerMaps();
+  const trackerMaps = createTrackerMaps();
 
-  // First pass: collect all components
-  files.forEach((file) => {
+  // First pass: collect components
+  for (const file of files) {
     try {
       const fileComponents = collectComponents(file).map(comp => ({
         ...comp,
         file: path.relative(projectRoot, comp.file),
-        usageCount: 0 // Initialize usage count
+        usageCount: 0,
+        isUsed: false
       }));
       components.push(...fileComponents);
     } catch (error) {
       console.warn(colors.red(`Error parsing ${file}: ${error instanceof Error ? error.message : String(error)}`));
     }
-  });
+  }
 
-  // Second pass: track usages and imports
-  files.forEach((file) => {
+  // Second pass: track usages
+  for (const file of files) {
     try {
       trackComponentUsages(file, trackerMaps);
       trackImports(file, trackerMaps);
     } catch (error) {
       console.warn(colors.red(`Error parsing ${file}: ${error instanceof Error ? error.message : String(error)}`));
     }
-  });
+  }
 
-  // Mark components as used and track usage locations
-  components.forEach(comp => {
+  // Mark components as used
+  for (const comp of components) {
     const usageLocations = trackerMaps.componentUsages.get(comp.name) || new Set();
     const importLocations = trackerMaps.importedComponents.get(comp.name) || new Set();
 
-    // Calculate total usage count
     comp.usageCount = usageLocations.size + importLocations.size;
-    
-    // Only mark as used if actually used or imported
     comp.isUsed = comp.usageCount > 0;
-    
-    // Add usage information if available
+
     if (comp.isUsed) {
-      comp.usedIn = [
-        ...usageLocations,
-        ...importLocations
-      ]
-      .map(location => path.relative(projectRoot, location))
-      .filter((value, index, self) => 
-        self.indexOf(value) === index
-      );
+      comp.usedIn = Array.from(new Set([
+        ...Array.from(usageLocations),
+        ...Array.from(importLocations)
+      ])).map(loc => path.relative(projectRoot, loc));
     }
-  });
+  }
 
   return components;
 }
