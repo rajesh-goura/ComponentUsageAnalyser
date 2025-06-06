@@ -5,8 +5,6 @@ import { Component } from './types';
 // Function to visualize components and their usage in a graph
 export async function visualizeComponents(components: Component[], outputPath: string = 'component-graph.html') {
   const graphData = prepareGraphData(components);
-  console.log('Graph nodes:', graphData.nodes.length);
-  console.log('Graph edges:', graphData.edges.length);
   const html = generateEnhancedHtmlTemplate(graphData);
   // Write the HTML to the specified output path
   fs.writeFileSync(outputPath, html);
