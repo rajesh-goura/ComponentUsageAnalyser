@@ -25,6 +25,7 @@
     "figlet": "^1.8.1",
     "inquirer": "^12.6.3",
     "markdown-pdf": "^11.0.0",
+    "puppeteer": "^24.10.0",
     "react-native": "^0.79.2",
     "yoctocolors": "^2.1.1"
   },

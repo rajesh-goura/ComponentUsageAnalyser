@@ -18,6 +18,7 @@ import { writeMarkdownReport } from "../writeMarkdown";
 import { displayAnalysisResults } from "../displayAnalysis";
 import { visualizeComponents } from "../visualizer";
 import path from "path";
+import { generateGraphScreenshot } from "../GenerateGraphScreenShot";
 
 // Initializing CLI tool
 const program = new Command();
@@ -76,6 +77,12 @@ async function runCLI() {
       },
     ]);
     if (generateReport) {
+      await visualizeComponents(components);
+
+      // Step 2: Generate screenshot
+      await generateGraphScreenshot();
+
+      // Step 3: Generate markdown report + PDF
       writeMarkdownReport(components);
     }
     return;
@@ -132,6 +139,12 @@ async function runCLI() {
   // if command is generateReport a report is generated
   else if (options.generateReport) {
     const components = scanComponents(absoluteScanPath, projectRoot);
+    await visualizeComponents(components);
+
+    // Step 2: Generate screenshot
+    await generateGraphScreenshot();
+
+    // Step 3: Generate markdown report + PDF
     writeMarkdownReport(components);
   }
   if (options.visualize) {

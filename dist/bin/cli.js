@@ -21,6 +21,7 @@ const writeMarkdown_1 = require("../writeMarkdown");
 const displayAnalysis_1 = require("../displayAnalysis");
 const visualizer_1 = require("../visualizer");
 const path_1 = __importDefault(require("path"));
+const GenerateGraphScreenShot_1 = require("../GenerateGraphScreenShot");
 // Initializing CLI tool
 const program = new commander_1.Command();
 // Displaying the tool name in ASCII art
@@ -67,6 +68,10 @@ async function runCLI() {
             },
         ]);
         if (generateReport) {
+            await (0, visualizer_1.visualizeComponents)(components);
+            // Step 2: Generate screenshot
+            await (0, GenerateGraphScreenShot_1.generateGraphScreenshot)();
+            // Step 3: Generate markdown report + PDF
             (0, writeMarkdown_1.writeMarkdownReport)(components);
         }
         return;
@@ -118,6 +123,10 @@ async function runCLI() {
     // if command is generateReport a report is generated
     else if (options.generateReport) {
         const components = (0, scanner_1.scanComponents)(absoluteScanPath, projectRoot);
+        await (0, visualizer_1.visualizeComponents)(components);
+        // Step 2: Generate screenshot
+        await (0, GenerateGraphScreenShot_1.generateGraphScreenshot)();
+        // Step 3: Generate markdown report + PDF
         (0, writeMarkdown_1.writeMarkdownReport)(components);
     }
     if (options.visualize) {

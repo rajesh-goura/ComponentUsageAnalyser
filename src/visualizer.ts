@@ -1,17 +1,19 @@
 import fs from 'fs';
-import path from 'path';
 import open from 'open';
 import { Component } from './types';
 
+// Function to visualize components and their usage in a graph
 export async function visualizeComponents(components: Component[], outputPath: string = 'component-graph.html') {
   const graphData = prepareGraphData(components);
   console.log('Graph nodes:', graphData.nodes.length);
   console.log('Graph edges:', graphData.edges.length);
   const html = generateEnhancedHtmlTemplate(graphData);
+  // Write the HTML to the specified output path
   fs.writeFileSync(outputPath, html);
   await open(outputPath, { wait: false });
 }
 
+// Function to prepare graph data from components
 function prepareGraphData(components: Component[]) {
   const nodes = components.map(comp => ({
     data: {
@@ -52,6 +54,7 @@ function prepareGraphData(components: Component[]) {
   return { nodes, edges };
 }
 
+// Function to generate the HTML template for the graph visualization
 function generateEnhancedHtmlTemplate(graphData: any) {
   return `<!DOCTYPE html>
 <html>

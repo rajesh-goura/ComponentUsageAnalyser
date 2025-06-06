@@ -58,6 +58,10 @@ function writeMarkdownReport(components: any[], outputPath = "component-report.m
     content += 'Please run: `--deleteUnused` to remove these unused components.\n';
   }
 
+  content += `## 📊 Component Graph (Static Preview)\n`;
+  content += `![Component Graph](./component-graph.png)\n\n`;
+
+
   // Write to file
   const fullPath = path.join(process.cwd(), outputPath);
   fs.writeFileSync(fullPath, content, "utf8");
