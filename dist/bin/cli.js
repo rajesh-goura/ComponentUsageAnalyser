@@ -19,6 +19,7 @@ const inquirer_1 = __importDefault(require("inquirer"));
 const deleteFiles_1 = require("../deleteFiles");
 const writeMarkdown_1 = require("../writeMarkdown");
 const displayAnalysis_1 = require("../displayAnalysis");
+const visualizer_1 = require("../visualizer");
 const path_1 = __importDefault(require("path"));
 // Initializing CLI tool
 const program = new commander_1.Command();
@@ -31,6 +32,7 @@ program
     .option("-a, --analyze [path]", "Scans a React/React Native codebase for component usage")
     .option("-d, --deleteUnused [path]", "Scan and delete unused component files")
     .option("-g, --generateReport [path]", "Generate report for component usage")
+    .option("-v, --visualize [path]", "Generate component visualization")
     .parse(process.argv);
 // Accessing the parsed options
 const options = program.opts();
@@ -117,6 +119,13 @@ async function runCLI() {
     else if (options.generateReport) {
         const components = (0, scanner_1.scanComponents)(absoluteScanPath, projectRoot);
         (0, writeMarkdown_1.writeMarkdownReport)(components);
+    }
+    if (options.visualize) {
+        const components = (0, scanner_1.scanComponents)(absoluteScanPath, projectRoot);
+        console.log(yoctocolors_1.default.blue("\nGenerating component visualization..."));
+        await (0, visualizer_1.visualizeComponents)(components);
+        console.log(yoctocolors_1.default.green("\nVisualization generated and opened in your default browser."));
+        return;
     }
 }
 runCLI().catch((error) => {
