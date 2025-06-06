@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "bin": {
-    "component-analyser": "./dist/bin/cli.js"
+    "cua": "./dist/bin/cli.js"
   },
   "scripts": {
     "build": "tsc",

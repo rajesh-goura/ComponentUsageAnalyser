@@ -12,10 +12,8 @@ export async function generateGraphScreenshot(
   // Resolve the absolute path of the HTML file
   const absPath = path.resolve(htmlPath);
   await page.goto(`file://${absPath}`, { waitUntil: 'networkidle0' });
-  await page.setViewport({ width: 1200, height: 800 });
+  await page.setViewport({ width: 700, height: 700 });
 
   await page.screenshot({ path: outputImage });
   await browser.close();
-
-  console.log(`🖼️ Graph screenshot saved at ${outputImage}`);
 }
