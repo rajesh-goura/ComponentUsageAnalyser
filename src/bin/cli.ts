@@ -26,7 +26,7 @@ import { getProjectRoot, getRelativePath } from "../utils/pathResolver";
 // Initializing CLI tool
 const program = new Command();
 
-// Displaying the tool name in ASCII art
+// Displaying the tool name in ASCII arts
 console.log(figlet.textSync("CUA Tool"));
 
 // Setting up command line options
