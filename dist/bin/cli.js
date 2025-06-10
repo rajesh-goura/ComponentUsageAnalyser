@@ -12,16 +12,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const commander_1 = require("commander");
-const figlet = require("figlet");
-const scanner_1 = require("../scanner");
 const yoctocolors_1 = __importDefault(require("yoctocolors"));
 const inquirer_1 = __importDefault(require("inquirer"));
-const deleteFiles_1 = require("../deleteFiles");
-const writeMarkdown_1 = require("../writeMarkdown");
-const displayAnalysis_1 = require("../displayAnalysis");
-const visualizer_1 = require("../visualizer");
+const figlet = require("figlet");
 const path_1 = __importDefault(require("path"));
+const scanner_1 = require("../scanner");
+const deleteFiles_1 = require("../deleteFiles");
+const displayAnalysis_1 = require("../displayAnalysis");
 const GenerateGraphScreenShot_1 = require("../GenerateGraphScreenShot");
+const writeMarkdown_1 = require("../writeMarkdown");
+const visualizer_1 = require("../visualizer");
+const pathResolver_1 = require("../utils/pathResolver");
 // Initializing CLI tool
 const program = new commander_1.Command();
 // Displaying the tool name in ASCII art
@@ -37,24 +38,14 @@ program
     .parse(process.argv);
 // Accessing the parsed options
 const options = program.opts();
-function getProjectRoot(scanPath) {
-    const absolutePath = path_1.default.resolve(scanPath);
-    const coinPayIndex = absolutePath.indexOf('CoinPay');
-    if (coinPayIndex !== -1) {
-        return path_1.default.join(absolutePath.substring(0, coinPayIndex), 'CoinPay');
-    }
-    return absolutePath;
-}
-function getRelativePath(fullPath, projectRoot) {
-    const relativePath = path_1.default.relative(projectRoot, fullPath);
-    return relativePath.startsWith('..') ? fullPath : `CoinPay/${relativePath}`;
-}
 async function runCLI() {
-    const scanPath = typeof (options.analyze || options.deleteUnused || options.generateReport) === "string"
-        ? options.analyze || options.deleteUnused || options.generateReport
+    // if path not provided, using current working directory
+    const scanPath = typeof (options.analyze || options.deleteUnused || options.generateReport || options.visualize) === "string"
+        ? options.analyze || options.deleteUnused || options.generateReport || options.visualize
         : process.cwd();
+    // Resolving the absolute path of the scan directory
     const absoluteScanPath = path_1.default.resolve(scanPath);
-    const projectRoot = getProjectRoot(absoluteScanPath);
+    const projectRoot = (0, pathResolver_1.getProjectRoot)(absoluteScanPath);
     // Analyze mode: Display usage and write reports
     if (options.analyze) {
         const components = (0, scanner_1.scanComponents)(absoluteScanPath, projectRoot);
@@ -68,8 +59,9 @@ async function runCLI() {
             },
         ]);
         if (generateReport) {
+            // Step 1: Visualize components
             await (0, visualizer_1.visualizeComponents)(components);
-            // Step 2: Generate screenshot
+            // Step 2: Generate screenshot of dependency graph
             await (0, GenerateGraphScreenShot_1.generateGraphScreenshot)();
             // Step 3: Generate markdown report + PDF
             (0, writeMarkdown_1.writeMarkdownReport)(components);
@@ -87,7 +79,7 @@ async function runCLI() {
         // extracting unused files
         const unusedFiles = unusedComponents.map((comp) => comp.file);
         // Display relative paths in confirmation message
-        const relativeUnusedFiles = unusedFiles.map(file => `- ${getRelativePath(file, projectRoot)}`).join("\n");
+        const relativeUnusedFiles = unusedFiles.map(file => `- ${(0, pathResolver_1.getRelativePath)(file, projectRoot)}`).join("\n");
         // Asking for delete confirmation
         const { confirmDelete } = await inquirer_1.default.prompt([
             {
@@ -104,10 +96,10 @@ async function runCLI() {
                 deletedFiles.forEach((file) => {
                     const comp = unusedComponents.find(c => c.file === file);
                     if (comp) {
-                        console.log(yoctocolors_1.default.red(`- ${comp.name} (${getRelativePath(comp.file, projectRoot)})`));
+                        console.log(yoctocolors_1.default.red(`- ${comp.name} (${(0, pathResolver_1.getRelativePath)(comp.file, projectRoot)})`));
                     }
                     else {
-                        console.log(yoctocolors_1.default.red(`- ${getRelativePath(file, projectRoot)}`));
+                        console.log(yoctocolors_1.default.red(`- ${(0, pathResolver_1.getRelativePath)(file, projectRoot)}`));
                     }
                 });
                 console.log(yoctocolors_1.default.bgGray("\n Please run/re-run the analysis generate updated report."));
@@ -129,6 +121,7 @@ async function runCLI() {
         // Step 3: Generate markdown report + PDF
         (0, writeMarkdown_1.writeMarkdownReport)(components);
     }
+    // if command is visualize, an html visualization is generated
     if (options.visualize) {
         const components = (0, scanner_1.scanComponents)(absoluteScanPath, projectRoot);
         console.log(yoctocolors_1.default.blue("\nGenerating component visualization..."));
@@ -137,6 +130,7 @@ async function runCLI() {
         return;
     }
 }
+// errors handled
 runCLI().catch((error) => {
     console.error(yoctocolors_1.default.bgRed('Error:'), error);
     process.exit(1);
