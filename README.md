@@ -10,31 +10,45 @@ A powerful Command Line Interface (CLI) utility designed to scan React and React
 - **Detailed Usage Tracking:** Determines whether a component is used, how many times it's used, and in which files.
 - **Unused Component Detection:** Highlights components that are defined but never utilized, helping you identify dead code.
 - **Interactive Deletion:** Provides an interactive prompt to confirm the deletion of unused component files.
-- **Markdown Report Generation:** Generates a comprehensive Markdown report of component usage.
-- **PDF Report Generation:** Automatically converts the Markdown report into a PDF.
+- **Interactive Component Dependency Visualisation:** Provides an interactive html interface to visualise the component interdependency.
+- **Report Generation:** Creates detailed component usage reports in both Markdown and PDF formats for easy sharing and documentation.
 
 ---
 
 ## 🛠️ Usage
 
+### Run via NPX
+
+```bash
+npx cua --help
+```
+
 ### CLI Options
 
 ```bash
-cua --help
+npx cua [options]
 ```
 
 - `-a, --analyze [path]`: Scan codebase for component usage.
 - `-d, --deleteUnused [path]`: Delete unused components after confirmation.
 - `-g, --generateReport [path]`: Generate Markdown and PDF usage report.
+- `-v, --visualize [path]`: Generate component visualization.
+- `-h, --help`: Show help.
+- `-V, --version`: Show CLI version.
 
-_please note_ -> providing path is optional, if not given the tool scans through the current working directory
+_please note_ → providing path is optional, if not given the tool scans through the current working directory
+
+---
 
 ### Examples
 
 ```bash
-cua --analyze ./src
-cua --deleteUnused ./components
-cua --generateReport ./app
+npx cua --analyze ./src
+npx cua -a
+npx cua --deleteUnused ./components
+npx cua -d ./components
+npx cua --generateReport ./app
+npx cua --visualize
 ```
 
 ---
@@ -136,3 +150,5 @@ export interface TrackerMaps {
 ---
 
 We welcome issues, ideas, and PRs!
+
+source code: https://github.com/rajesh-goura/ComponentUsageAnalyser/
