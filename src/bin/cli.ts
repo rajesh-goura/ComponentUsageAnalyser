@@ -23,6 +23,7 @@ import { writeMarkdownReport } from "../output/writeMarkdown";
 
 import { getProjectRoot, getRelativePath } from "../utils/pathResolver";
 import { visualizeComponents } from "../output/visualizer";
+import ora from "ora";
 
 // Initializing CLI tool
 const program = new Command();
@@ -69,11 +70,15 @@ async function runCLI() {
     ]);
     if (generateReport) {
       // Step 1: Visualize components
+      const spinner1 = ora("Generating visualiser...").start();
       await visualizeComponents(components);
-
+      spinner1.succeed(`✅ visualiser generated, opening in browser...`);
+      
+      const spinner2 = ora("Generating reports...").start();
       // Step 2: Generate screenshot of dependency graph
       await generateGraphScreenshot();
-
+      spinner2.succeed(`almost there...`);
+      
       // Step 3: Generate markdown report + PDF
       writeMarkdownReport(components);
     }
@@ -131,21 +136,26 @@ async function runCLI() {
   // if command is generateReport a report is generated
   else if (options.generateReport) {
     const components = scanComponents(absoluteScanPath, projectRoot);
-    await visualizeComponents(components);
-
-    // Step 2: Generate screenshot
-    await generateGraphScreenshot();
-
-    // Step 3: Generate markdown report + PDF
-    writeMarkdownReport(components);
+    // Step 1: Create visualisations
+      const spinner1 = ora("Generating visualiser...").start();
+      await visualizeComponents(components);
+      spinner1.succeed(`✅ visualiser generated, opening in browser...`);
+      
+      const spinner2 = ora("Generating reports...").start();
+      // Step 2: Generate screenshot of dependency graph
+      await generateGraphScreenshot();
+      spinner2.succeed(`almost there...`);
+  
+      // Step 3: Generate markdown report + PDF
+      writeMarkdownReport(components);
   }
 
   // if command is visualize, an html visualization is generated
   if (options.visualize) {
     const components = scanComponents(absoluteScanPath, projectRoot);
-    console.log(colors.blue("\nGenerating component visualization..."));
+    const vSpinner = ora("Generating visualiser...").start();
     await visualizeComponents(components);
-    console.log(colors.green("\nVisualization generated and opened in your default browser."));
+    vSpinner.succeed(`✅ visualiser generated, opening in browser...`);
     return;
   }
 }
