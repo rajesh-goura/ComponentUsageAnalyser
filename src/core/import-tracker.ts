@@ -1,7 +1,7 @@
 import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
 import { readFileSync } from 'fs';
-import { TrackerMaps } from './types';
+import { TrackerMaps } from '../types/types';
 
 export function trackImports(file: string, trackerMaps: TrackerMaps) {
   const content = readFileSync(file, 'utf-8');

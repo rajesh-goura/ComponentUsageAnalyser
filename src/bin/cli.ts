@@ -15,13 +15,14 @@ const figlet = require("figlet");
 
 import path from "path";
 
-import { scanComponents } from "../scanner";
-import { deleteFiles } from "../deleteFiles";
-import { displayAnalysisResults } from "../displayAnalysis";
-import { generateGraphScreenshot } from "../GenerateGraphScreenShot";
-import { writeMarkdownReport } from "../writeMarkdown";
-import { visualizeComponents } from "../visualizer";
+import { scanComponents } from "../core/scanner";
+import { deleteFiles } from "../utils/deleteFiles";
+import { displayAnalysisResults } from "../output/displayAnalysis";
+import { generateGraphScreenshot } from "../utils/GenerateGraphScreenShot";
+import { writeMarkdownReport } from "../output/writeMarkdown";
+
 import { getProjectRoot, getRelativePath } from "../utils/pathResolver";
+import { visualizeComponents } from "../output/visualizer";
 
 // Initializing CLI tool
 const program = new Command();

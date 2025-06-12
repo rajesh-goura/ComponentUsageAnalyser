@@ -405,7 +405,7 @@ ${unused.length > 0 ? `
         });
     });
 
-    console.log(colors.bgGreen(`Professional PDF report generated at ${pdfPath}`));
+    console.log(colors.bgGreen(`PDF report generated at ${pdfPath}`));
   } catch (err) {
     console.error(colors.bgRed('PDF generation error:'), err);
     throw err;
@@ -416,7 +416,7 @@ ${unused.length > 0 ? `
     }
   }
 
-  console.log(colors.bgGreen(`\nEnhanced markdown report generated at ${outputPath}`));
+  console.log(colors.bgGreen(`\Markdown report generated at ${outputPath}`));
 }
 
 export { writeMarkdownReport };

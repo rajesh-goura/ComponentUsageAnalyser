@@ -6,7 +6,7 @@ import { trackComponentUsages } from './usage-tracker';
 import { trackImports } from './import-tracker';
 import { collectComponents } from './component-collector';
 
-import { Component, TrackerMaps, createTrackerMaps } from './types';
+import { Component, TrackerMaps, createTrackerMaps } from '../types/types';
 
 /// Scans a React/React Native codebase for components and their usage
 export function scanComponents(rootPath: string, projectRoot: string) {

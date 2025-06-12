@@ -1,6 +1,7 @@
 import fs from 'fs';
 import open from 'open';
-import { Component } from './types';
+import { Component } from '../types/types';
+
 
 // Function to visualize components and their usage in a graph
 export async function visualizeComponents(components: Component[], outputPath: string = 'component-graph.html') {

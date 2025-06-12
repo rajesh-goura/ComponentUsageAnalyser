@@ -16,13 +16,13 @@ const yoctocolors_1 = __importDefault(require("yoctocolors"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const figlet = require("figlet");
 const path_1 = __importDefault(require("path"));
-const scanner_1 = require("../scanner");
-const deleteFiles_1 = require("../deleteFiles");
-const displayAnalysis_1 = require("../displayAnalysis");
-const GenerateGraphScreenShot_1 = require("../GenerateGraphScreenShot");
-const writeMarkdown_1 = require("../writeMarkdown");
-const visualizer_1 = require("../visualizer");
+const scanner_1 = require("../core/scanner");
+const deleteFiles_1 = require("../utils/deleteFiles");
+const displayAnalysis_1 = require("../output/displayAnalysis");
+const GenerateGraphScreenShot_1 = require("../utils/GenerateGraphScreenShot");
+const writeMarkdown_1 = require("../output/writeMarkdown");
 const pathResolver_1 = require("../utils/pathResolver");
+const visualizer_1 = require("../output/visualizer");
 // Initializing CLI tool
 const program = new commander_1.Command();
 // Displaying the tool name in ASCII art

@@ -1,7 +1,8 @@
 import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
 import { readFileSync } from 'fs';
-import { TrackerMaps } from './types';
+import { TrackerMaps } from '../types/types';
+
 
 /// This function tracks component usages in a given files
 export function trackComponentUsages(file: string, trackerMaps: TrackerMaps) {
