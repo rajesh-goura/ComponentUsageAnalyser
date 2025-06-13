@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs";
-import colors from "yoctocolors";
 import markdownpdf, { Options } from "markdown-pdf";
+import ora from "ora";
 
 interface Component {
   name: string;
@@ -12,6 +12,9 @@ interface Component {
 }
 
 async function writeMarkdownReport(components: Component[], outputPath = "component-report.md") {
+  const mdSpinner = ora("Generating markdown report...").start();
+  const spinner = ora("Generating component usage report...").start();
+
   const used = components.filter(c => c.isUsed);
   const unused = components.filter(c => !c.isUsed);
   const total = components.length;
@@ -257,8 +260,16 @@ ${unused.length > 0 ? `
 `;
 
   // Write markdown to file
-  const fullPath = path.join(process.cwd(), outputPath);
-  fs.writeFileSync(fullPath, content, "utf8");
+    const fullPath = path.join(process.cwd(), outputPath);
+
+  try {
+    fs.writeFileSync(fullPath, content, "utf8");
+    mdSpinner.succeed(`✅ Markdown report generated at ${outputPath}`);
+  } catch (err) {
+    mdSpinner.fail("❌ Failed to write markdown report");
+    throw err;
+  }
+
 
   // Generate CSS content for PDF
   const cssContent = `
@@ -391,7 +402,7 @@ ${unused.length > 0 ? `
       html: true
     }
   };
-
+  
   try {
     await new Promise<void>((resolve, reject) => {
       markdownpdf(pdfOptions)
@@ -404,10 +415,9 @@ ${unused.length > 0 ? `
           }
         });
     });
-
-    console.log(colors.bgGreen(`PDF report generated at ${pdfPath}`));
+    spinner.succeed(`✅ PDF report generated at component-report.pdf`);
   } catch (err) {
-    console.error(colors.bgRed('PDF generation error:'), err);
+      spinner.fail("❌ Failed to generate report"); 
     throw err;
   } finally {
     // Clean up temporary CSS file
@@ -415,8 +425,6 @@ ${unused.length > 0 ? `
       fs.unlinkSync(cssPath);
     }
   }
-
-  console.log(colors.bgGreen(`\Markdown report generated at ${outputPath}`));
 }
 
 export { writeMarkdownReport };

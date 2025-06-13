@@ -23,6 +23,7 @@ const GenerateGraphScreenShot_1 = require("../utils/GenerateGraphScreenShot");
 const writeMarkdown_1 = require("../output/writeMarkdown");
 const pathResolver_1 = require("../utils/pathResolver");
 const visualizer_1 = require("../output/visualizer");
+const ora_1 = __importDefault(require("ora"));
 // Initializing CLI tool
 const program = new commander_1.Command();
 // Displaying the tool name in ASCII art
@@ -60,9 +61,13 @@ async function runCLI() {
         ]);
         if (generateReport) {
             // Step 1: Visualize components
+            const spinner1 = (0, ora_1.default)("Generating visualiser...").start();
             await (0, visualizer_1.visualizeComponents)(components);
+            spinner1.succeed(`✅ visualiser generated, opening in browser...`);
+            const spinner2 = (0, ora_1.default)("Generating reports...").start();
             // Step 2: Generate screenshot of dependency graph
             await (0, GenerateGraphScreenShot_1.generateGraphScreenshot)();
+            spinner2.succeed(`almost there...`);
             // Step 3: Generate markdown report + PDF
             (0, writeMarkdown_1.writeMarkdownReport)(components);
         }
@@ -115,18 +120,23 @@ async function runCLI() {
     // if command is generateReport a report is generated
     else if (options.generateReport) {
         const components = (0, scanner_1.scanComponents)(absoluteScanPath, projectRoot);
+        // Step 1: Create visualisations
+        const spinner1 = (0, ora_1.default)("Generating visualiser...").start();
         await (0, visualizer_1.visualizeComponents)(components);
-        // Step 2: Generate screenshot
+        spinner1.succeed(`✅ visualiser generated, opening in browser...`);
+        const spinner2 = (0, ora_1.default)("Generating reports...").start();
+        // Step 2: Generate screenshot of dependency graph
         await (0, GenerateGraphScreenShot_1.generateGraphScreenshot)();
+        spinner2.succeed(`almost there...`);
         // Step 3: Generate markdown report + PDF
         (0, writeMarkdown_1.writeMarkdownReport)(components);
     }
     // if command is visualize, an html visualization is generated
     if (options.visualize) {
         const components = (0, scanner_1.scanComponents)(absoluteScanPath, projectRoot);
-        console.log(yoctocolors_1.default.blue("\nGenerating component visualization..."));
+        const vSpinner = (0, ora_1.default)("Generating visualiser...").start();
         await (0, visualizer_1.visualizeComponents)(components);
-        console.log(yoctocolors_1.default.green("\nVisualization generated and opened in your default browser."));
+        vSpinner.succeed(`✅ visualiser generated, opening in browser...`);
         return;
     }
 }
