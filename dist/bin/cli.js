@@ -16,6 +16,8 @@ const yoctocolors_1 = __importDefault(require("yoctocolors"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const figlet = require("figlet");
 const path_1 = __importDefault(require("path"));
+const ora_1 = __importDefault(require("ora"));
+const perf_hooks_1 = require("perf_hooks");
 const scanner_1 = require("../core/scanner");
 const deleteFiles_1 = require("../utils/deleteFiles");
 const displayAnalysis_1 = require("../output/displayAnalysis");
@@ -23,7 +25,6 @@ const GenerateGraphScreenShot_1 = require("../utils/GenerateGraphScreenShot");
 const writeMarkdown_1 = require("../output/writeMarkdown");
 const pathResolver_1 = require("../utils/pathResolver");
 const visualizer_1 = require("../output/visualizer");
-const ora_1 = __importDefault(require("ora"));
 // Initializing CLI tool
 const program = new commander_1.Command();
 // Displaying the tool name in ASCII art
@@ -36,9 +37,22 @@ program
     .option("-d, --deleteUnused [path]", "Scan and delete unused component files")
     .option("-g, --generateReport [path]", "Generate report for component usage")
     .option("-v, --visualize [path]", "Generate component visualization")
+    .option("-p, --performance", "Show detailed performance metrics")
     .parse(process.argv);
 // Accessing the parsed options
 const options = program.opts();
+async function generateReportFiles(components, showPerformance = false) {
+    const spinner1 = (0, ora_1.default)("Generating visualizer...").start();
+    await (0, visualizer_1.visualizeComponents)(components);
+    spinner1.succeed(`✅ Visualizer generated, opening in browser...`);
+    const spinner2 = (0, ora_1.default)("Generating reports...").start();
+    await (0, GenerateGraphScreenShot_1.generateGraphScreenshot)();
+    (0, writeMarkdown_1.writeMarkdownReport)(components);
+    spinner2.succeed(`✅ Reports generated successfully`);
+    if (showPerformance) {
+        console.log(yoctocolors_1.default.blue("\nReport generation completed"));
+    }
+}
 async function runCLI() {
     // if path not provided, using current working directory
     const scanPath = typeof (options.analyze || options.deleteUnused || options.generateReport || options.visualize) === "string"
@@ -47,9 +61,20 @@ async function runCLI() {
     // Resolving the absolute path of the scan directory
     const absoluteScanPath = path_1.default.resolve(scanPath);
     const projectRoot = (0, pathResolver_1.getProjectRoot)(absoluteScanPath);
+    // Scan components with loading indicator
+    const scanSpinner = (0, ora_1.default)("Scanning components...").start();
+    const scanStart = perf_hooks_1.performance.now();
+    const { components, stats } = (0, scanner_1.scanComponents)(absoluteScanPath, projectRoot);
+    const scanTime = perf_hooks_1.performance.now() - scanStart;
+    scanSpinner.succeed(`✅ Found ${components.length} components (${stats.usedComponents} used)`);
+    if (options.performance) {
+        (0, scanner_1.displayPerformanceStats)(stats);
+    }
+    else {
+        console.log(yoctocolors_1.default.gray(`Scan completed in ${scanTime.toFixed(2)}ms`));
+    }
     // Analyze mode: Display usage and write reports
     if (options.analyze) {
-        const components = (0, scanner_1.scanComponents)(absoluteScanPath, projectRoot);
         (0, displayAnalysis_1.displayAnalysisResults)(components);
         const { generateReport } = await inquirer_1.default.prompt([
             {
@@ -60,22 +85,12 @@ async function runCLI() {
             },
         ]);
         if (generateReport) {
-            // Step 1: Visualize components
-            const spinner1 = (0, ora_1.default)("Generating visualiser...").start();
-            await (0, visualizer_1.visualizeComponents)(components);
-            spinner1.succeed(`✅ visualiser generated, opening in browser...`);
-            const spinner2 = (0, ora_1.default)("Generating reports...").start();
-            // Step 2: Generate screenshot of dependency graph
-            await (0, GenerateGraphScreenShot_1.generateGraphScreenshot)();
-            spinner2.succeed(`almost there...`);
-            // Step 3: Generate markdown report + PDF
-            (0, writeMarkdown_1.writeMarkdownReport)(components);
+            await generateReportFiles(components, options.performance);
         }
         return;
     }
     // Delete unused components mode
     if (options.deleteUnused) {
-        const components = (0, scanner_1.scanComponents)(absoluteScanPath, projectRoot);
         const unusedComponents = components.filter((c) => !c.isUsed);
         if (unusedComponents.length === 0) {
             console.log(yoctocolors_1.default.bgGreen("\n🎉 No unused components found."));
@@ -95,9 +110,11 @@ async function runCLI() {
             },
         ]);
         if (confirmDelete) {
+            const deleteSpinner = (0, ora_1.default)("Deleting unused files...").start();
             const deletedFiles = (0, deleteFiles_1.deleteFiles)(unusedFiles);
+            deleteSpinner.succeed(`✅ Deleted ${deletedFiles.length} files`);
             if (deletedFiles.length > 0) {
-                console.log(yoctocolors_1.default.bgRed(`\nDeleted ${deletedFiles.length} unused component file(s):`));
+                console.log(yoctocolors_1.default.bgRed(`\nDeleted files:`));
                 deletedFiles.forEach((file) => {
                     const comp = unusedComponents.find(c => c.file === file);
                     if (comp) {
@@ -107,40 +124,25 @@ async function runCLI() {
                         console.log(yoctocolors_1.default.red(`- ${(0, pathResolver_1.getRelativePath)(file, projectRoot)}`));
                     }
                 });
-                console.log(yoctocolors_1.default.bgGray("\n Please run/re-run the analysis generate updated report."));
-            }
-            else {
-                console.log(yoctocolors_1.default.bgGray("\nNo files were deleted."));
+                console.log(yoctocolors_1.default.bgGray("\nPlease run/re-run the analysis to generate updated report."));
             }
         }
         else {
             console.log(yoctocolors_1.default.bgGray("Skipped file deletion."));
         }
     }
-    // if command is generateReport a report is generated
+    // Generate report mode
     else if (options.generateReport) {
-        const components = (0, scanner_1.scanComponents)(absoluteScanPath, projectRoot);
-        // Step 1: Create visualisations
-        const spinner1 = (0, ora_1.default)("Generating visualiser...").start();
-        await (0, visualizer_1.visualizeComponents)(components);
-        spinner1.succeed(`✅ visualiser generated, opening in browser...`);
-        const spinner2 = (0, ora_1.default)("Generating reports...").start();
-        // Step 2: Generate screenshot of dependency graph
-        await (0, GenerateGraphScreenShot_1.generateGraphScreenshot)();
-        spinner2.succeed(`almost there...`);
-        // Step 3: Generate markdown report + PDF
-        (0, writeMarkdown_1.writeMarkdownReport)(components);
+        await generateReportFiles(components, options.performance);
     }
-    // if command is visualize, an html visualization is generated
+    // Visualization mode
     if (options.visualize) {
-        const components = (0, scanner_1.scanComponents)(absoluteScanPath, projectRoot);
-        const vSpinner = (0, ora_1.default)("Generating visualiser...").start();
+        const vSpinner = (0, ora_1.default)("Generating visualizer...").start();
         await (0, visualizer_1.visualizeComponents)(components);
-        vSpinner.succeed(`✅ visualiser generated, opening in browser...`);
-        return;
+        vSpinner.succeed(`✅ Visualizer generated, opening in browser...`);
     }
 }
-// errors handled
+// Error handling
 runCLI().catch((error) => {
     console.error(yoctocolors_1.default.bgRed('Error:'), error);
     process.exit(1);
