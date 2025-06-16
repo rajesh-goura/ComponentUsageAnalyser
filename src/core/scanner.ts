@@ -127,12 +127,13 @@ export function scanComponents(rootPath: string, projectRoot: string): ScanResul
 
 // Utility function to display performance results
 export function displayPerformanceStats(stats: ScanResult['stats']) {
-  console.log(colors.bold('\nScan Performance Metrics:'));
+  console.log(colors.bold('\nScan Summary:'));
   console.log(colors.blue('----------------------------------------'));
   console.log(`Total files processed: ${colors.green(stats.totalFiles.toString())}`);
   console.log(`Total components found: ${colors.green(stats.totalComponents.toString())}`);
   console.log(`Used components: ${colors.green(stats.usedComponents.toString())}`);
   console.log(`Unused components: ${colors.green(stats.unusedComponents.toString())}`);
+  console.log(colors.bold('\nScan Performance Metrics:'));
   console.log(colors.blue('----------------------------------------'));
   console.log(`File globbing time: ${colors.yellow(stats.globTime.toFixed(2))}ms`);
   console.log(`Component parsing time: ${colors.yellow(stats.parseTime.toFixed(2))}ms`);

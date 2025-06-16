@@ -19,10 +19,9 @@ import { performance } from "perf_hooks";
 import { scanComponents, displayPerformanceStats } from "../core/scanner";
 import { deleteFiles } from "../utils/deleteFiles";
 import { displayAnalysisResults } from "../output/displayAnalysis";
-import { generateGraphScreenshot } from "../utils/GenerateGraphScreenShot";
-import { writeMarkdownReport } from "../output/writeMarkdown";
 import { getProjectRoot, getRelativePath } from "../utils/pathResolver";
 import { visualizeComponents } from "../output/visualizer";
+import { generateReportFiles } from "../utils/generateReports";
 
 // Initializing CLI tool
 const program = new Command();
@@ -38,27 +37,10 @@ program
   .option("-d, --deleteUnused [path]", "Scan and delete unused component files")
   .option("-g, --generateReport [path]", "Generate report for component usage")
   .option("-v, --visualize [path]", "Generate component visualization")
-  .option("-p, --performance", "Show detailed performance metrics")
   .parse(process.argv);
 
 // Accessing the parsed options
 const options = program.opts();
-
-async function generateReportFiles(components: any[], showPerformance: boolean = false) {
-  const spinner1 = ora("Generating visualizer...").start();
-  await visualizeComponents(components);
-  spinner1.succeed(`✅ Visualizer generated, opening in browser...`);
-  
-  const spinner2 = ora("Generating reports...").start();
-  await generateGraphScreenshot();
-  
-  writeMarkdownReport(components);
-  spinner2.succeed(`✅ Reports generated successfully`);
-  
-  if (showPerformance) {
-    console.log(colors.blue("\nReport generation completed"));
-  }
-}
 
 async function runCLI() {
   // if path not provided, using current working directory
@@ -70,23 +52,18 @@ async function runCLI() {
   // Resolving the absolute path of the scan directory
   const absoluteScanPath = path.resolve(scanPath);
   const projectRoot = getProjectRoot(absoluteScanPath);
-
-  // Scan components with loading indicator
+      
   const scanSpinner = ora("Scanning components...").start();
   const scanStart = performance.now();
   const { components, stats } = scanComponents(absoluteScanPath, projectRoot);
   const scanTime = performance.now() - scanStart;
-  scanSpinner.succeed(`✅ Found ${components.length} components (${stats.usedComponents} used)`);
-
-  if (options.performance) {
-    displayPerformanceStats(stats);
-  } else {
-    console.log(colors.gray(`Scan completed in ${scanTime.toFixed(2)}ms`));
-  }
-
+  scanSpinner.succeed(`Found ${components.length} components (${stats.usedComponents} used)`);
+  console.log(colors.gray(`Scan completed in ${scanTime.toFixed(2)}ms`));
   // Analyze mode: Display usage and write reports
   if (options.analyze) {
     displayAnalysisResults(components);
+    // displaying performance stats after analysis
+    displayPerformanceStats(stats);
 
     const { generateReport } = await inquirer.prompt([
       {
@@ -98,7 +75,7 @@ async function runCLI() {
     ]);
     
     if (generateReport) {
-      await generateReportFiles(components, options.performance);
+      await generateReportFiles(components);
     }
     return;
   }
@@ -108,7 +85,7 @@ async function runCLI() {
     const unusedComponents = components.filter((c) => !c.isUsed);
 
     if (unusedComponents.length === 0) {
-      console.log(colors.bgGreen("\n🎉 No unused components found."));
+      console.log(colors.green("\n No unused components found."));
       return;
     }
 
@@ -133,7 +110,7 @@ async function runCLI() {
     if (confirmDelete) {
       const deleteSpinner = ora("Deleting unused files...").start();
       const deletedFiles = deleteFiles(unusedFiles);
-      deleteSpinner.succeed(`✅ Deleted ${deletedFiles.length} files`);
+      deleteSpinner.succeed(`Deleted ${deletedFiles.length} files`);
       
       if (deletedFiles.length > 0) {
         console.log(colors.bgRed(`\nDeleted files:`));
@@ -151,12 +128,13 @@ async function runCLI() {
       console.log(colors.bgGray("Skipped file deletion."));
     }
   }
-  // Generate report mode
-  else if (options.generateReport) {
-    await generateReportFiles(components, options.performance);
+  
+  // Generate reports
+  if (options.generateReport) {
+    await generateReportFiles(components);
   }
 
-  // Visualization mode
+  // Generate visualisations
   if (options.visualize) {
     const vSpinner = ora("Generating visualizer...").start();
     await visualizeComponents(components);
