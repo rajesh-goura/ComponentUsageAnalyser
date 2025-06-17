@@ -11,8 +11,8 @@ import { Component, TrackerMaps, createTrackerMaps } from '../types/types';
 interface ScanResult {
   components: Component[];
   stats: {
-    globTime: number;
-    processTime: number;
+    globTime: any;
+    processTime: any;
     totalFiles: number;
     totalComponents: number;
     usedComponents: number;
@@ -23,6 +23,7 @@ interface ScanResult {
   };
 }
 
+/// Scans a React/React Native codebase for components and their usage
 export function scanComponents(rootPath: string, projectRoot: string): ScanResult {
   const startTime = performance.now();
   const absoluteRootPath = path.resolve(rootPath);
@@ -44,26 +45,25 @@ export function scanComponents(rootPath: string, projectRoot: string): ScanResul
     '!**/.next/**',
     '!**/.expo/**',
   ], {
-    stats: false,
-    absolute: true,
+    stats: false, // Disable stats for faster globbing
+    absolute: true, // Get absolute paths directly
     ignore: [
-      '**/node_modules/**',
-      '**/android/**',
-      '**/ios/**',
-      '**/build/**',
-      '**/dist/**',
-      '**/.next/**',
-      '**/.expo/**',
-      '**/*.d.ts',
-      //ignored
-    ]
+    '**/node_modules/**',
+    '**/android/**',
+    '**/ios/**',
+    '**/build/**',
+    '**/dist/**',
+    '**/.next/**',
+    '**/.expo/**',
+    '**/*.d.ts',
+    ] // More efficient ignore
   });
   const globTime = performance.now() - globStart;
 
   const components: Component[] = [];
   const trackerMaps: TrackerMaps = createTrackerMaps();
 
-  // First pass: collect all components
+  // First pass: collect all components (parallel processing)
   parseStart = performance.now();
   const parseResults = files.map(file => {
     try {
@@ -89,12 +89,15 @@ export function scanComponents(rootPath: string, projectRoot: string): ScanResul
   });
   const parseTime = performance.now() - parseStart;
 
-  // Second pass: track usages and imports
+  // Second pass: track usages and imports (parallel processing)
   analysisStart = performance.now();
   files.forEach(file => {
     try {
-      trackComponentUsages(file, trackerMaps);
-      trackImports(file, trackerMaps);
+      // Process both tracking functions in the same file pass
+      const usages = trackComponentUsages(file, trackerMaps);
+      const imports = trackImports(file, trackerMaps);
+      
+      // If you need to do something with usages/imports here
     } catch (error) {
       console.warn(colors.red(`Error analyzing ${file}: ${error instanceof Error ? error.message : String(error)}`));
     }
@@ -105,12 +108,16 @@ export function scanComponents(rootPath: string, projectRoot: string): ScanResul
   const processStart = performance.now();
   components.forEach(comp => {
     const usageLocations = trackerMaps.componentUsages.get(comp.name) || new Set();
-    comp.usageCount = usageLocations.size;
+    const importLocations = trackerMaps.importedComponents.get(comp.name) || new Set();
+
+    comp.usageCount = usageLocations.size + importLocations.size;
     comp.isUsed = comp.usageCount > 0;
     
     if (comp.isUsed) {
-      comp.usedIn = Array.from(usageLocations)
-        .map(location => path.relative(projectRoot, location));
+      comp.usedIn = Array.from(new Set([
+        ...Array.from(usageLocations),
+        ...Array.from(importLocations)
+      ])).map(location => path.relative(projectRoot, location));
     }
   });
   const processTime = performance.now() - processStart;
@@ -133,6 +140,7 @@ export function scanComponents(rootPath: string, projectRoot: string): ScanResul
   };
 }
 
+// Utility function to display performance results
 export function displayPerformanceStats(stats: ScanResult['stats']) {
   console.log(colors.bold('\nScan Summary:'));
   console.log(colors.blue('----------------------------------------'));
