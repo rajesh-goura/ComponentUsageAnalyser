@@ -55,6 +55,7 @@ export function scanComponents(rootPath: string, projectRoot: string): ScanResul
       '**/.next/**',
       '**/.expo/**',
       '**/*.d.ts',
+      //ignored
     ]
   });
   const globTime = performance.now() - globStart;
