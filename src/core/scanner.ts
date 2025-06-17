@@ -35,13 +35,28 @@ export function scanComponents(rootPath: string, projectRoot: string): ScanResul
   // Get files with timing
   const globStart = performance.now();
   const files = globSync([
-    `${absoluteRootPath}/**/*.{jsx,tsx}`,
+    `${absoluteRootPath}/**/*.{jsx,tsx,js,ts}`,
     '!**/node_modules/**',
-    '!**/*.d.ts'
+    '!**/*.d.ts',
+    '!**/android/**',
+    '!**/ios/**',
+    '!**/build/**',
+    '!**/dist/**',
+    '!**/.next/**',
+    '!**/.expo/**',
   ], {
     stats: false, // Disable stats for faster globbing
     absolute: true, // Get absolute paths directly
-    ignore: ['**/node_modules/**'] // More efficient ignore
+    ignore: [
+    '**/node_modules/**',
+    '**/android/**',
+    '**/ios/**',
+    '**/build/**',
+    '**/dist/**',
+    '**/.next/**',
+    '**/.expo/**',
+    '**/*.d.ts',
+    ] // More efficient ignore
   });
   const globTime = performance.now() - globStart;
 
