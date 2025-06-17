@@ -7,12 +7,15 @@ import { trackComponentUsages } from './usage-tracker';
 import { trackImports } from './import-tracker';
 import { collectComponents } from './component-collector';
 import { Component, TrackerMaps, createTrackerMaps } from '../types/types';
+import { markExpoRouterUsages } from './expoRouterHelpr';
+import { trackExpoScreens } from './expoScreenDecl';
+
 
 interface ScanResult {
   components: Component[];
   stats: {
-    globTime: any;
-    processTime: any;
+    globTime: number;
+    processTime: number;
     totalFiles: number;
     totalComponents: number;
     usedComponents: number;
@@ -27,12 +30,10 @@ interface ScanResult {
 export function scanComponents(rootPath: string, projectRoot: string): ScanResult {
   const startTime = performance.now();
   const absoluteRootPath = path.resolve(rootPath);
-  
-  // Track individual phases
+
   let parseStart: number;
   let analysisStart: number;
-  
-  // Get files with timing
+
   const globStart = performance.now();
   const files = globSync([
     `${absoluteRootPath}/**/*.{jsx,tsx,js,ts}`,
@@ -45,25 +46,25 @@ export function scanComponents(rootPath: string, projectRoot: string): ScanResul
     '!**/.next/**',
     '!**/.expo/**',
   ], {
-    stats: false, // Disable stats for faster globbing
-    absolute: true, // Get absolute paths directly
+    stats: false,
+    absolute: true,
     ignore: [
-    '**/node_modules/**',
-    '**/android/**',
-    '**/ios/**',
-    '**/build/**',
-    '**/dist/**',
-    '**/.next/**',
-    '**/.expo/**',
-    '**/*.d.ts',
-    ] // More efficient ignore
+      '**/node_modules/**',
+      '**/android/**',
+      '**/ios/**',
+      '**/build/**',
+      '**/dist/**',
+      '**/.next/**',
+      '**/.expo/**',
+      '**/*.d.ts',
+    ]
   });
   const globTime = performance.now() - globStart;
 
   const components: Component[] = [];
   const trackerMaps: TrackerMaps = createTrackerMaps();
 
-  // First pass: collect all components (parallel processing)
+  // First pass: collect all components
   parseStart = performance.now();
   const parseResults = files.map(file => {
     try {
@@ -76,8 +77,7 @@ export function scanComponents(rootPath: string, projectRoot: string): ScanResul
       return { file, components: [] };
     }
   });
-  
-  // Flatten and process components
+
   parseResults.forEach(({ file, components: fileComponents }) => {
     components.push(...fileComponents.map(comp => ({
       ...comp,
@@ -87,38 +87,41 @@ export function scanComponents(rootPath: string, projectRoot: string): ScanResul
       usedIn: []
     })));
   });
+
+  // Mark implicit Expo Router components
+  markExpoRouterUsages(components);
+
   const parseTime = performance.now() - parseStart;
 
-  // Second pass: track usages and imports (parallel processing)
+  // Second pass: track usages and imports
   analysisStart = performance.now();
   files.forEach(file => {
     try {
-      // Process both tracking functions in the same file pass
-      const usages = trackComponentUsages(file, trackerMaps);
-      const imports = trackImports(file, trackerMaps);
-      
-      // If you need to do something with usages/imports here
+      trackComponentUsages(file, trackerMaps);
+      trackImports(file, trackerMaps);
+      trackExpoScreens(file, components);
     } catch (error) {
       console.warn(colors.red(`Error analyzing ${file}: ${error instanceof Error ? error.message : String(error)}`));
     }
   });
   const analysisTime = performance.now() - analysisStart;
 
-  // Process component usage data
+  // Process usage data
   const processStart = performance.now();
   components.forEach(comp => {
     const usageLocations = trackerMaps.componentUsages.get(comp.name) || new Set();
     const importLocations = trackerMaps.importedComponents.get(comp.name) || new Set();
 
-    comp.usageCount = usageLocations.size + importLocations.size;
+    const newUsageCount = usageLocations.size + importLocations.size;
+    comp.usageCount += newUsageCount;
     comp.isUsed = comp.usageCount > 0;
-    
-    if (comp.isUsed) {
-      comp.usedIn = Array.from(new Set([
-        ...Array.from(usageLocations),
-        ...Array.from(importLocations)
-      ])).map(location => path.relative(projectRoot, location));
-    }
+
+    const newUsedIn = Array.from(new Set([
+      ...Array.from(usageLocations),
+      ...Array.from(importLocations)
+    ])).map(location => path.relative(projectRoot, location));
+
+    comp.usedIn = Array.from(new Set([...(comp.usedIn || []), ...newUsedIn]));
   });
   const processTime = performance.now() - processStart;
 
@@ -140,7 +143,7 @@ export function scanComponents(rootPath: string, projectRoot: string): ScanResul
   };
 }
 
-// Utility function to display performance results
+// Display performance metrics
 export function displayPerformanceStats(stats: ScanResult['stats']) {
   console.log(colors.bold('\nScan Summary:'));
   console.log(colors.blue('----------------------------------------'));
